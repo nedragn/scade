@@ -1,0 +1,15 @@
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\bin\Debug\ScadaGUI.exe.config
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\bin\Debug\ScadaGUI.exe
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\bin\Debug\ScadaGUI.pdb
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\obj\Debug\ScadaGUI.csproj.AssemblyReference.cache
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\obj\Debug\MainWindow.g.cs
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\obj\Debug\App.g.cs
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\obj\Debug\ScadaGUI_MarkupCompile.cache
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\obj\Debug\ScadaGUI_MarkupCompile.lref
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\obj\Debug\MainWindow.baml
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\obj\Debug\ScadaGUI.g.resources
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\obj\Debug\ScadaGUI.Properties.Resources.resources
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\obj\Debug\ScadaGUI.csproj.GenerateResource.cache
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\obj\Debug\ScadaGUI.csproj.CoreCompileInputs.cache
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\obj\Debug\ScadaGUI.exe
+C:\Users\Nuzdic\Documents\GitHub\scade\ScadaGUI\obj\Debug\ScadaGUI.pdb

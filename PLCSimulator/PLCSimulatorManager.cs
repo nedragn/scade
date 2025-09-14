@@ -15,7 +15,6 @@ namespace PLCSimulator
     /// 1 x DIGITAL INPUT: ADDR009
     /// 1 x DIGITAL OUTPUT: ADDR010
     /// </summary>
-    /// Test da li ovaj github radi.
     public class PLCSimulatorManager
     {
         private Dictionary<string, double> addressValues;
@@ -44,7 +43,7 @@ namespace PLCSimulator
             addressValues.Add("ADDR009", 0);
 
             // DO
-            // TODO: dodati jos nekoliko adresa za DI (recimo po 4 za svaku vrstu tagova)
+            // TODO: dodati jos nekoliko adresa za DO (recimo po 4 za svaku vrstu tagova)
             addressValues.Add("ADDR010", 0);
         }
 

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DataConcentrator
 {
-    internal class Alarm
+    public class Alarm
     {
     }
 }
