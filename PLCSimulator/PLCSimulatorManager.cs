@@ -15,6 +15,7 @@ namespace PLCSimulator
     /// 1 x DIGITAL INPUT: ADDR009
     /// 1 x DIGITAL OUTPUT: ADDR010
     /// </summary>
+    /// Test da li ovaj github radi.
     public class PLCSimulatorManager
     {
         private Dictionary<string, double> addressValues;
