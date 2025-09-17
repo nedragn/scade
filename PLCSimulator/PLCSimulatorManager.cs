@@ -129,6 +129,10 @@ namespace PLCSimulator
             return minValue + (next * (maxValue - minValue));
         }
 
+        /// 
+        /// /////////// isprovanje
+        /// ///////////////////////
+
         public void Abort()
         {
             t1.Abort();
