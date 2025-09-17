@@ -16,13 +16,13 @@ namespace DataConcentrator
     public class Alarm
     {
         public int Id { get; set; }  // ID alarma
-        public string TagId { get; set; }  // ID taga nad kojim je alarm
+        public int TagId { get; set; }  // ID taga nad kojim je alarm
         public double LimitValue { get; set; }  // Granica za aktivaciju alarma
         public AlarmDirection Direction { get; set; }  // Iznad / Ispod
         public string Message { get; set; }  // Poruka alarma
 
         
-        public Alarm(int id, string tagId, double limitValue, AlarmDirection direction, string message)
+        public Alarm(int id, int tagId, double limitValue, AlarmDirection direction, string message)
         {
             Id = id;
             TagId = tagId;
