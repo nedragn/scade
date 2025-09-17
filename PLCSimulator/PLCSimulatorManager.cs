@@ -41,10 +41,16 @@ namespace PLCSimulator
             // DI
             // TODO: dodati jos nekoliko adresa za DI (recimo po 4 za svaku vrstu tagova)
             addressValues.Add("ADDR009", 0);
+            addressValues.Add("ADDR010", 0);
+            addressValues.Add("ADDR011", 0);
+            addressValues.Add("ADDR012", 0);
 
             // DO
             // TODO: dodati jos nekoliko adresa za DO (recimo po 4 za svaku vrstu tagova)
-            addressValues.Add("ADDR010", 0);
+            addressValues.Add("ADDR013", 0);
+            addressValues.Add("ADDR014", 0);
+            addressValues.Add("ADDR015", 0);
+            addressValues.Add("ADDR016", 0);
         }
 
         public void StartPLCSimulator()
@@ -88,6 +94,31 @@ namespace PLCSimulator
                     {
                         addressValues["ADDR009"] = 0;
                     }
+                    if (addressValues["ADDR010"] == 0)
+                    {
+                        addressValues["ADDR010"] = 1;
+                    }
+                    else
+                    {
+                        addressValues["ADDR010"] = 0;
+                    }
+                    if (addressValues["ADDR011"] == 0)
+                    {
+                        addressValues["ADDR011"] = 1;
+                    }
+                    else
+                    {
+                        addressValues["ADDR011"] = 0;
+                    }
+                    if (addressValues["ADDR012"] == 0)
+                    {
+                        addressValues["ADDR012"] = 1;
+                    }
+                    else
+                    {
+                        addressValues["ADDR012"] = 0;
+                    }
+
                 }
             }
         }
@@ -129,9 +160,6 @@ namespace PLCSimulator
             return minValue + (next * (maxValue - minValue));
         }
 
-        /// 
-        /// /////////// isprovanje
-        /// ///////////////////////
 
         public void Abort()
         {
