@@ -8,5 +8,6 @@ namespace DataConcentrator
 {
     public class Alarm
     {
+        int a = 0;
     }
 }
