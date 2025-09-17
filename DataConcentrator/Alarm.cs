@@ -9,8 +9,8 @@ namespace DataConcentrator
 
     public enum AlarmDirection
     {
-        Iznad,   // Aktivira se kada vrednost pređe iznad granice
-        Ispod    // Aktivira se kada vrednost padne ispod granice
+        HIGH,   // Aktivira se kada vrednost pređe iznad granice
+        LOW    // Aktivira se kada vrednost padne ispod granice
     }
 
     public class Alarm
@@ -34,9 +34,9 @@ namespace DataConcentrator
         // Provera da li je alarm aktiviran za neku trenutnu vrednost
         public bool checkAlarm(double currentValue)
         {
-            if (Direction == AlarmDirection.Iznad && currentValue > LimitValue)
+            if (Direction == AlarmDirection.HIGH && currentValue > LimitValue)
                 return true;
-            if (Direction == AlarmDirection.Ispod && currentValue < LimitValue)
+            if (Direction == AlarmDirection.LOW && currentValue < LimitValue)
                 return true;
             return false;
         }
