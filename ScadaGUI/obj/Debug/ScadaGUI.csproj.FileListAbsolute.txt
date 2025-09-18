@@ -21,7 +21,6 @@ C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\ScadaGUI.exe.conf
 C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\MainWindow.g.cs
 C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\App.g.cs
 C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\ScadaGUI_MarkupCompile.cache
-C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\ScadaGUI_MarkupCompile.lref
 C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\MainWindow.baml
 C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\ScadaGUI.g.resources
 C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\ScadaGUI.Properties.Resources.resources
@@ -29,3 +28,8 @@ C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\ScadaGUI.csproj.G
 C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\ScadaGUI.csproj.CoreCompileInputs.cache
 C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\ScadaGUI.exe
 C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\ScadaGUI.pdb
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\bin\Debug\DataConcentrator.dll
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\bin\Debug\PLCSimulator.dll
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\bin\Debug\DataConcentrator.pdb
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\bin\Debug\PLCSimulator.pdb
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\ScadaGUI\obj\Debug\ScadaGUI.csproj.Up2Date

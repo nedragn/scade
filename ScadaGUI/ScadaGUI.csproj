@@ -94,5 +94,15 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DataConcentrator\DataConcentrator.csproj">
+      <Project>{024884f0-496f-4426-a0ce-45ff39ae24a6}</Project>
+      <Name>DataConcentrator</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PLCSimulator\PLCSimulator.csproj">
+      <Project>{dc33bd88-1c29-4d05-8bb6-c41323290719}</Project>
+      <Name>PLCSimulator</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

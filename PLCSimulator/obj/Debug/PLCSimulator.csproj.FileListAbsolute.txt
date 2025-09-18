@@ -1,0 +1,6 @@
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\PLCSimulator\bin\Debug\PLCSimulator.dll
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\PLCSimulator\bin\Debug\PLCSimulator.pdb
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\PLCSimulator\obj\Debug\PLCSimulator.csproj.AssemblyReference.cache
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\PLCSimulator\obj\Debug\PLCSimulator.csproj.CoreCompileInputs.cache
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\PLCSimulator\obj\Debug\PLCSimulator.dll
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\PLCSimulator\obj\Debug\PLCSimulator.pdb
