@@ -47,5 +47,11 @@
     <Compile Include="Tag.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PLCSimulator\PLCSimulator.csproj">
+      <Project>{dc33bd88-1c29-4d05-8bb6-c41323290719}</Project>
+      <Name>PLCSimulator</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
