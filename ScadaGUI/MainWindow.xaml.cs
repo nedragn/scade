@@ -47,14 +47,14 @@ namespace ScadaGUI
         {
             InitializeComponent();
 
-            //PLC Simulator
+            // Inicijalizacija PLC Simulator
             _plc = new PLCSimulatorManager();
             _plc.StartPLCSimulator();
 
             RefreshGrid();
         }
 
-        
+        // Dinamičko prikazivanje polja po tipu taga
         private void TagTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ScanFields.Visibility = Visibility.Collapsed;
@@ -83,7 +83,7 @@ namespace ScadaGUI
             }
         }
 
-        //dodavanje taga
+        // Dodavanje taga
         private void AddTagBtn_Click(object sender, RoutedEventArgs e)
         {
             if (!(TagTypeCombo.SelectedItem is ComboBoxItem typeItem))
@@ -148,7 +148,7 @@ namespace ScadaGUI
             }
         }
 
-        //brisanje taga
+        // Uklanjanje taga
         private void RemoveTagBtn_Click(object sender, RoutedEventArgs e)
         {
             if (TagsGrid.SelectedItem is Tag selectedTag)
@@ -158,7 +158,7 @@ namespace ScadaGUI
             }
         }
 
-        
+        // Osvježavanje DataGrid-a
         private void RefreshGrid()
         {
             TagsGrid.ItemsSource = null;
@@ -171,5 +171,6 @@ namespace ScadaGUI
         }
     }
 }
+
 
 

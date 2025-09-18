@@ -15,19 +15,19 @@
 <Window x:Class="ScadaGUI.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="650" Width="1000">
+        Title="SCADA GUI" Height="650" Width="1000">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- unos taga -->
+        <!-- Forma za unos taga -->
         <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0 0 0 10">
 
-            <!-- tip taga -->
+            <!-- Tip taga -->
             <StackPanel Orientation="Horizontal" Margin="0 5">
-                <TextBlock Text="Tip taga" Width="100" VerticalAlignment="Center"/>
+                <TextBlock Text="Tag Type:" Width="100" VerticalAlignment="Center"/>
                 <ComboBox x:Name="TagTypeCombo" Width="120" SelectionChanged="TagTypeCombo_SelectionChanged">
                     <ComboBoxItem Content="DI"/>
                     <ComboBoxItem Content="DO"/>
@@ -36,24 +36,24 @@
                 </ComboBox>
             </StackPanel>
 
-            
+            <!-- Osnovni podaci -->
             <StackPanel Orientation="Horizontal" Margin="0 5">
-                <TextBlock Text="Naziv taga" Width="100" VerticalAlignment="Center"/>
+                <TextBlock Text="Tag Name:" Width="100" VerticalAlignment="Center"/>
                 <TextBox x:Name="TagNameBox" Width="150"/>
-                <TextBlock Text="Opis" Width="100" Margin="40 0 0 0" VerticalAlignment="Center"/>
+                <TextBlock Text="Description:" Width="100" Margin="20 0 0 0" VerticalAlignment="Center"/>
                 <TextBox x:Name="DescriptionBox" Width="200"/>
-                <TextBlock Text="Adrese I/O" Width="100" Margin="20 0 0 0" VerticalAlignment="Center"/>
+                <TextBlock Text="I/O Address:" Width="100" Margin="20 0 0 0" VerticalAlignment="Center"/>
                 <TextBox x:Name="AddressBox" Width="150"/>
             </StackPanel>
 
-            
+            <!-- Scan polja za DI/AI -->
             <StackPanel x:Name="ScanFields" Orientation="Horizontal" Margin="0 5" Visibility="Collapsed">
                 <TextBlock Text="Scan Time (ms):" Width="120" VerticalAlignment="Center"/>
                 <TextBox x:Name="ScanTimeBox" Width="100"/>
                 <CheckBox x:Name="ScanCheckBox" Content="On/Off Scan" Margin="20 0 0 0"/>
             </StackPanel>
 
-            
+            <!-- Analogna polja za AI/AO -->
             <StackPanel x:Name="AnalogFields" Orientation="Horizontal" Margin="0 5" Visibility="Collapsed">
                 <TextBlock Text="Low Limit:" Width="100" VerticalAlignment="Center"/>
                 <TextBox x:Name="LowLimitBox" Width="80"/>
@@ -63,20 +63,21 @@
                 <TextBox x:Name="UnitsBox" Width="100"/>
             </StackPanel>
 
-            
+            <!-- Initial value za DO/AO -->
             <StackPanel x:Name="InitValueField" Orientation="Horizontal" Margin="0 5" Visibility="Collapsed">
                 <TextBlock Text="Initial Value:" Width="100" VerticalAlignment="Center"/>
                 <TextBox x:Name="InitValueBox" Width="100"/>
             </StackPanel>
 
-            <!-- dugme -->
+            <!-- Dugmad -->
             <StackPanel Orientation="Horizontal" Margin="0 10">
-                <Button x:Name="AddTagBtn" Content="Dodaj tag" Width="100" Margin="5" Click="AddTagBtn_Click"/>
-                <Button x:Name="RemoveTagBtn" Content="Obrisi tag" Width="100" Margin="5" Click="RemoveTagBtn_Click"/>
+                <Button x:Name="AddTagBtn" Content="Add Tag" Width="100" Margin="5" Click="AddTagBtn_Click"/>
+                <Button x:Name="RemoveTagBtn" Content="Remove Tag" Width="100" Margin="5" Click="RemoveTagBtn_Click"/>
             </StackPanel>
         </StackPanel>
 
-        <!-- prikaz tagova -->
-        <DataGrid x:Name="TagsGrid" Grid.Row="1" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Single" SelectionChanged="TagsGrid_SelectionChanged"/>
+        <!-- DataGrid za prikaz tagova -->
+        <DataGrid x:Name="TagsGrid" Grid.Row="1" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Single"/>
     </Grid>
 </Window>
+
