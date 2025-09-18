@@ -7,16 +7,16 @@
       "RelativeMoniker": "D:0:0:{E6C18285-8FF8-4C84-8FDD-2BB92D74B554}|ScadaGUI\\ScadaGUI.csproj|solutionrelative:scadagui\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{024884F0-496F-4426-A0CE-45FF39AE24A6}|DataConcentrator\\DataConcentrator.csproj|C:\\Users\\milic\\Desktop\\PSUSU\\PROJEKAT\\scade\\dataconcentrator\\tag.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{024884F0-496F-4426-A0CE-45FF39AE24A6}|DataConcentrator\\DataConcentrator.csproj|solutionrelative:dataconcentrator\\tag.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{E6C18285-8FF8-4C84-8FDD-2BB92D74B554}|ScadaGUI\\ScadaGUI.csproj|c:\\users\\milic\\desktop\\psusu\\projekat\\scade\\scadagui\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{E6C18285-8FF8-4C84-8FDD-2BB92D74B554}|ScadaGUI\\ScadaGUI.csproj|solutionrelative:scadagui\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{024884F0-496F-4426-A0CE-45FF39AE24A6}|DataConcentrator\\DataConcentrator.csproj|C:\\Users\\milic\\Desktop\\PSUSU\\PROJEKAT\\scade\\dataconcentrator\\activatedalarm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{024884F0-496F-4426-A0CE-45FF39AE24A6}|DataConcentrator\\DataConcentrator.csproj|solutionrelative:dataconcentrator\\activatedalarm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{024884F0-496F-4426-A0CE-45FF39AE24A6}|DataConcentrator\\DataConcentrator.csproj|C:\\Users\\milic\\Desktop\\PSUSU\\PROJEKAT\\scade\\dataconcentrator\\tag.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{024884F0-496F-4426-A0CE-45FF39AE24A6}|DataConcentrator\\DataConcentrator.csproj|solutionrelative:dataconcentrator\\tag.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{024884F0-496F-4426-A0CE-45FF39AE24A6}|DataConcentrator\\DataConcentrator.csproj|C:\\Users\\milic\\Desktop\\PSUSU\\PROJEKAT\\scade\\dataconcentrator\\alarm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -53,7 +53,7 @@
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 3,
               "Title": "Tag.cs",
               "DocumentMoniker": "C:\\Users\\milic\\Desktop\\PSUSU\\PROJEKAT\\scade\\DataConcentrator\\Tag.cs",
               "RelativeDocumentMoniker": "DataConcentrator\\Tag.cs",
@@ -66,13 +66,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 2,
               "Title": "ActivatedAlarm.cs",
               "DocumentMoniker": "C:\\Users\\milic\\Desktop\\PSUSU\\PROJEKAT\\scade\\DataConcentrator\\ActivatedAlarm.cs",
               "RelativeDocumentMoniker": "DataConcentrator\\ActivatedAlarm.cs",
               "ToolTip": "C:\\Users\\milic\\Desktop\\PSUSU\\PROJEKAT\\scade\\DataConcentrator\\ActivatedAlarm.cs",
               "RelativeToolTip": "DataConcentrator\\ActivatedAlarm.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAArAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-09-14T09:57:31.34Z",
               "EditorCaption": ""
@@ -146,21 +146,21 @@
               "Title": "MainWindow.xaml",
               "DocumentMoniker": "C:\\Users\\milic\\Desktop\\PSUSU\\PROJEKAT\\scade\\ScadaGUI\\MainWindow.xaml",
               "RelativeDocumentMoniker": "ScadaGUI\\MainWindow.xaml",
-              "ToolTip": "C:\\Users\\milic\\Desktop\\PSUSU\\PROJEKAT\\scade\\ScadaGUI\\MainWindow.xaml*",
-              "RelativeToolTip": "ScadaGUI\\MainWindow.xaml*",
+              "ToolTip": "C:\\Users\\milic\\Desktop\\PSUSU\\PROJEKAT\\scade\\ScadaGUI\\MainWindow.xaml",
+              "RelativeToolTip": "ScadaGUI\\MainWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
               "WhenOpened": "2025-09-14T09:56:51.348Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "MainWindow.xaml.cs",
               "DocumentMoniker": "C:\\Users\\milic\\Desktop\\PSUSU\\PROJEKAT\\scade\\ScadaGUI\\MainWindow.xaml.cs",
               "RelativeDocumentMoniker": "ScadaGUI\\MainWindow.xaml.cs",
               "ToolTip": "C:\\Users\\milic\\Desktop\\PSUSU\\PROJEKAT\\scade\\ScadaGUI\\MainWindow.xaml.cs",
               "RelativeToolTip": "ScadaGUI\\MainWindow.xaml.cs",
-              "ViewState": "AgIAABIAAAAAAAAAAAAAAKkAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAJgAAAAAAAAAAAAswKoAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-09-14T12:16:10.872Z",
               "EditorCaption": ""
