@@ -74,6 +74,34 @@
                 <Button x:Name="AddTagBtn" Content="Add Tag" Width="100" Margin="5" Click="AddTagBtn_Click"/>
                 <Button x:Name="RemoveTagBtn" Content="Remove Tag" Width="100" Margin="5" Click="RemoveTagBtn_Click"/>
             </StackPanel>
+
+            <StackPanel Margin="0 20 0 0" Orientation="Vertical">
+                <TextBlock Text="Alarms" FontWeight="Bold" Margin="0 5"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0 5">
+                    <TextBlock Text="AI Tag:" Width="80" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="AITagCombo" Width="150"/>
+
+                    <TextBlock Text="Limit Value:" Width="90" Margin="10 0 0 0" VerticalAlignment="Center"/>
+                    <TextBox x:Name="LimitValueBox" Width="80"/>
+
+                    <TextBlock Text="Direction:" Width="70" Margin="10 0 0 0" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="DirectionCombo" Width="80">
+                        <ComboBoxItem Content="HIGH"/>
+                        <ComboBoxItem Content="LOW"/>
+                    </ComboBox>
+
+                    <TextBlock Text="Message:" Width="70" Margin="10 0 0 0" VerticalAlignment="Center"/>
+                    <TextBox x:Name="AlarmMessageBox" Width="150"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0 5">
+                    <Button x:Name="AddAlarmBtn" Content="Add Alarm" Width="100" Margin="5" Click="AddAlarmBtn_Click"/>
+                    <Button x:Name="RemoveAlarmBtn" Content="Remove Alarm" Width="100" Margin="5" Click="RemoveAlarmBtn_Click"/>
+                </StackPanel>
+
+                <DataGrid x:Name="AlarmsGrid" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Single" Height="100"/>
+            </StackPanel>
         </StackPanel>
 
         <!-- DataGrid za prikaz tagova -->

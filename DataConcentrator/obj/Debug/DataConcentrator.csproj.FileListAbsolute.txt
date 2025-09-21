@@ -1,0 +1,9 @@
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\DataConcentrator\bin\Debug\DataConcentrator.dll
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\DataConcentrator\bin\Debug\DataConcentrator.pdb
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\DataConcentrator\bin\Debug\PLCSimulator.dll
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\DataConcentrator\bin\Debug\PLCSimulator.pdb
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\DataConcentrator\obj\Debug\DataConcentrator.csproj.AssemblyReference.cache
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\DataConcentrator\obj\Debug\DataConcentrator.csproj.CoreCompileInputs.cache
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\DataConcentrator\obj\Debug\DataConc.AF26BFFF.Up2Date
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\DataConcentrator\obj\Debug\DataConcentrator.dll
+C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\DataConcentrator\obj\Debug\DataConcentrator.pdb

@@ -51,7 +51,34 @@ namespace ScadaGUI
             _plc = new PLCSimulatorManager();
             _plc.StartPLCSimulator();
 
+            // Pretplata na eventove DataConcentrator-a
+            PLCDataHandler.ValueChanged += PLCDataHandler_ValueChanged;
+            PLCDataHandler.AlarmRaised += PLCDataHandler_AlarmRaised;
+
             RefreshGrid();
+        }
+
+        // Event handler za promenu vrednosti tagova
+        private void PLCDataHandler_ValueChanged(object sender, EventArgs e)
+        {
+            // Osveži DataGrid na UI thread-u
+            Dispatcher.Invoke(() =>
+            {
+                TagsGrid.Items.Refresh();
+            });
+        }
+
+        // Event handler za aktiviranje alarma
+        private void PLCDataHandler_AlarmRaised(object sender, EventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                var lastAlarm = PLCDataHandler.ActivatedAlarms.LastOrDefault();
+                if (lastAlarm != null)
+                {
+                    MessageBox.Show($"ALARM!\nTag: {lastAlarm.TagName}\nMessage: {lastAlarm.Message}\nTime: {lastAlarm.Time}");
+                }
+            });
         }
 
         // Dinamičko prikazivanje polja po tipu taga
@@ -146,16 +173,51 @@ namespace ScadaGUI
             {
                 MessageBox.Show($"Greška pri unosu: {ex.Message}");
             }
+
+            if (tag != null && tag.IsValid())
+            {
+                _tags.Add(tag);
+                RefreshGrid();
+
+                // START scanner za AI/DI tagove
+                if (tag.type == TagType.AI || tag.type == TagType.DI)
+                {
+                    PLCDataHandler.AddTag(tag);          // dodaj tag u DataConcentrator
+                    PLCDataHandler.StartScanner(tag);    // pokreni skener
+                }
+                else
+                {
+                    PLCDataHandler.AddTag(tag);          // dodaj AO/DO tag bez skenera
+                }
+            }
         }
 
         // Uklanjanje taga
         private void RemoveTagBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (TagsGrid.SelectedItem is Tag selectedTag)
+            /*if (TagsGrid.SelectedItem is Tag selectedTag)
             {
                 _tags.Remove(selectedTag);
                 RefreshGrid();
+            }*/
+
+            // Dobijamo tag koji je selektovan u DataGrid-u
+            Tag tagToRemove = TagsGrid.SelectedItem as Tag;
+            if (tagToRemove != null)
+            {
+                _tags.Remove(tagToRemove); // ukloni iz liste
+                RefreshGrid();
+
+                // Ako je AI/DI tag, zaustavi njegov skener
+                if (tagToRemove.type == TagType.AI || tagToRemove.type == TagType.DI)
+                {
+                    PLCDataHandler.TerminateScanner(tagToRemove.id);
+                }
+
+                // Ukloni iz DataConcentrator-a
+                PLCDataHandler.RemoveTag(tagToRemove.id);
             }
+
         }
 
         // Osvježavanje DataGrid-a
@@ -168,6 +230,58 @@ namespace ScadaGUI
         private void TagsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
+        }
+
+        // Osvežavanje AI tagova u comboBox-u
+        private void RefreshAITags()
+        {
+            AITagCombo.ItemsSource = _tags.Where(t => t.type == TagType.AI).ToList();
+            AITagCombo.DisplayMemberPath = "Description";
+        }
+
+        // Dodavanje alarma
+        private void AddAlarmBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (AITagCombo.SelectedItem is Tag selectedTag)
+            {
+                if (!float.TryParse(LimitValueBox.Text, out float limit))
+                {
+                    MessageBox.Show("Neispravan limit value!");
+                    return;
+                }
+                if (!(DirectionCombo.SelectedItem is ComboBoxItem dirItem))
+                {
+                    MessageBox.Show("Izaberi direction!");
+                    return;
+                }
+
+                AlarmDirection dir = (AlarmDirection)Enum.Parse(typeof(AlarmDirection), dirItem.Content.ToString());
+                string message = AlarmMessageBox.Text;
+
+                int id = PLCDataHandler.Alarms.Count > 0 ? PLCDataHandler.Alarms.Max(a => a.Id) + 1 : 1;
+
+                Alarm alarm = new Alarm(id, selectedTag.id, limit, dir, message);
+                PLCDataHandler.AddAlarm(alarm);
+
+                RefreshAlarmsGrid(selectedTag.id);
+            }
+        }
+        
+        // Uklanjanje alarma
+        private void RemoveAlarmBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (AlarmsGrid.SelectedItem is Alarm selectedAlarm)
+            {
+                PLCDataHandler.RemoveAlarm(selectedAlarm.Id);
+                RefreshAlarmsGrid(selectedAlarm.TagId);
+            }
+        }
+
+        // Osvežavanje DataGrid-a za alarme
+        private void RefreshAlarmsGrid(int tagId)
+        {
+            AlarmsGrid.ItemsSource = null;
+            AlarmsGrid.ItemsSource = PLCDataHandler.Alarms.Where(a => a.TagId == tagId).ToList();
         }
     }
 }
