@@ -76,6 +76,18 @@ namespace ScadaGUI
                     Binding = new Binding($"[{columnName}]")});
             }
 
+            columnNames = new List<string> {
+                "Id", "Tag Id", "Limit Value", "Direction", "Message"
+            };
+            foreach (string columnName in columnNames)
+            {
+                AlarmsGrid.Columns.Add(new DataGridTextColumn
+                {
+                    Header = columnName,
+                    Binding = new Binding($"[{columnName}]")
+                });
+            }
+
             // Pretplata na eventove DataConcentrator-a
             ContextClass.ValueChanged += ContextClass_ValueChanged;
             ContextClass.AlarmRaised += ContextClass_AlarmRaised;
@@ -267,7 +279,23 @@ namespace ScadaGUI
                 });
             }
             TagsGrid.ItemsSource = tagRows;
+
+            var alarmRows = new List<Dictionary<string, object>>();
+            foreach (Alarm alarm in ContextClass.Alarms)
+            {
+                alarmRows.Add(new Dictionary<string, object>
+                {
+                    ["Id"] = alarm.Id.ToString(),
+                    ["Tag Id"] = alarm.TagId.ToString(),
+                    ["Limi Value"] = alarm.LimitValue.ToString(),
+                    ["Direction"] = alarm.Direction.ToString(),
+                    ["Message"] = alarm.Message,
+
+
+                });
+            }
             AITagCombo.ItemsSource = ContextClass.Tags.Where(t => t.type == TagType.AI);
+            AlarmsGrid.ItemsSource = alarmRows;
         }
 
         // Dodavanje alarma
