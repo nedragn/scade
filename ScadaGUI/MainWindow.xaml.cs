@@ -28,52 +28,74 @@ namespace ScadaGUI
     }
 }*/
 
+using DataConcentrator;
+using PLCSimulator;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
 using System.Windows;
 using System.Windows.Controls;
-using DataConcentrator;
-using PLCSimulator;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Xml.Linq;
+using System.Threading;
 
 namespace ScadaGUI
 {
     public partial class MainWindow : Window
     {
-        private List<Tag> _tags = new List<Tag>();
+       
         private PLCSimulatorManager _plc;
 
         public MainWindow()
         {
             InitializeComponent();
+            
 
             // Inicijalizacija PLC Simulator
             _plc = new PLCSimulatorManager();
             _plc.StartPLCSimulator();
 
-            // Pretplata na eventove DataConcentrator-a
-            PLCDataHandler.ValueChanged += PLCDataHandler_ValueChanged;
-            PLCDataHandler.AlarmRaised += PLCDataHandler_AlarmRaised;
+            AddressBox.ItemsSource = PLCSimulatorManager.addressValues.Keys;
 
+
+
+            TagsGrid.AutoGenerateColumns = false;
+            TagsGrid.Columns.Clear();   
+            List<string> columnNames = new List<string> {
+                "Id", "Name", "Desc.", "Address", "Type",
+                "Scan Time [AI, DI]", "Low Limit [AI, AO]", "High Limit [AI, AO]", "Units [AI, AO]", "Value"
+            };  
+            foreach(string columnName in columnNames)
+            {
+                TagsGrid.Columns.Add(new DataGridTextColumn { 
+                    Header= columnName, 
+                    Binding = new Binding($"[{columnName}]")});
+            }
+
+            // Pretplata na eventove DataConcentrator-a
+            ContextClass.ValueChanged += ContextClass_ValueChanged;
+            ContextClass.AlarmRaised += ContextClass_AlarmRaised;
             RefreshGrid();
+  
         }
 
         // Event handler za promenu vrednosti tagova
-        private void PLCDataHandler_ValueChanged(object sender, EventArgs e)
+        private void ContextClass_ValueChanged(object sender, EventArgs e)
         {
-            // Osveži DataGrid na UI thread-u
-            Dispatcher.Invoke(() =>
-            {
-                TagsGrid.Items.Refresh();
-            });
+            Console.WriteLine(sender);
+            Dispatcher.Invoke(new Action(() => { RefreshGrid(); }));
         }
 
         // Event handler za aktiviranje alarma
-        private void PLCDataHandler_AlarmRaised(object sender, EventArgs e)
+        private void ContextClass_AlarmRaised(object sender, EventArgs e)
         {
             Dispatcher.Invoke(() =>
             {
-                var lastAlarm = PLCDataHandler.ActivatedAlarms.LastOrDefault();
+                var lastAlarm = ContextClass.ActivatedAlarms.LastOrDefault();
                 if (lastAlarm != null)
                 {
                     MessageBox.Show($"ALARM!\nTag: {lastAlarm.TagName}\nMessage: {lastAlarm.Message}\nTime: {lastAlarm.Time}");
@@ -109,8 +131,8 @@ namespace ScadaGUI
                 }
             }
         }
-
-        // Dodavanje taga
+        //Returns a truth value corresponding to the validity of the tag
+        // Dodavanje taga, cela logika proveravanja ispravnosti tag treba biti u ContextClass
         private void AddTagBtn_Click(object sender, RoutedEventArgs e)
         {
             if (!(TagTypeCombo.SelectedItem is ComboBoxItem typeItem))
@@ -120,9 +142,15 @@ namespace ScadaGUI
             }
 
             TagType type = (TagType)Enum.Parse(typeof(TagType), typeItem.Content.ToString());
+            string name = TagNameBox.Text;
             string desc = DescriptionBox.Text;
             string addr = AddressBox.Text;
-            int id = _tags.Count > 0 ? _tags.Max(t => t.id) + 1 : 1;
+            if (PLCSimulatorManager.writtenAdresses.Contains(addr))
+            {
+                MessageBox.Show("Memory location is already populted. Remove tag from memory first.");
+                return;
+            }
+            int id = ContextClass.Tags.Count > 0 ? ContextClass.Tags.Max(t => t.id) + 1 : 1;
 
             Tag tag = null;
 
@@ -132,13 +160,13 @@ namespace ScadaGUI
                 {
                     case TagType.DI:
                         int scanTimeDI = int.Parse(ScanTimeBox.Text);
-                        bool scanDI = ScanCheckBox.IsChecked == true;
-                        tag = new Tag(id, type, desc, addr, scanTimeDI, scanDI);
+                        Boolean scanDI = (Boolean)ScanCheckBox.IsChecked;
+                        tag = new Tag(id,name, type, desc, addr, scanTimeDI, scanDI);
                         break;
 
                     case TagType.DO:
                         float initDO = float.Parse(InitValueBox.Text);
-                        tag = new Tag(id, type, desc, addr, initDO);
+                        tag = new Tag(id,name, type, desc, addr, initDO);
                         break;
 
                     case TagType.AI:
@@ -146,8 +174,8 @@ namespace ScadaGUI
                         float highAI = float.Parse(HighLimitBox.Text);
                         string unitsAI = UnitsBox.Text;
                         int scanTimeAI = int.Parse(ScanTimeBox.Text);
-                        bool scanAI = ScanCheckBox.IsChecked == true;
-                        tag = new Tag(id, type, desc, addr, lowAI, highAI, unitsAI, new List<Alarm>(), scanTimeAI, scanAI);
+                        bool scanAI = (Boolean)ScanCheckBox.IsChecked;
+                        tag = new Tag(id,name, type, desc, addr, lowAI, highAI, unitsAI, new List<Alarm>(), scanTimeAI, scanAI);
                         break;
 
                     case TagType.AO:
@@ -155,88 +183,91 @@ namespace ScadaGUI
                         float highAO = float.Parse(HighLimitBox.Text);
                         string unitsAO = UnitsBox.Text;
                         float initAO = float.Parse(InitValueBox.Text);
-                        tag = new Tag(id, type, desc, addr, lowAO, highAO, unitsAO, initAO);
+                        tag = new Tag(id,name, type, desc, addr, lowAO, highAO, unitsAO, initAO);
                         break;
-                }
-
-                if (tag != null && tag.IsValid())
-                {
-                    _tags.Add(tag);
-                    RefreshGrid();
-                }
-                else
-                {
-                    MessageBox.Show("Nevalidan tag!");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Greška pri unosu: {ex.Message}");
+                MessageBox.Show($"Oops...  {ex.Message}");
             }
-
-            if (tag != null && tag.IsValid())
+            if (tag != null && ContextClass.AddTag(tag))
             {
-                _tags.Add(tag);
-                RefreshGrid();
+                Console.WriteLine("Uslo!");
+                PLCSimulatorManager.writtenAdresses.Add(addr);
 
-                // START scanner za AI/DI tagove
-                if (tag.type == TagType.AI || tag.type == TagType.DI)
-                {
-                    PLCDataHandler.AddTag(tag);          // dodaj tag u DataConcentrator
-                    PLCDataHandler.StartScanner(tag);    // pokreni skener
-                }
-                else
-                {
-                    PLCDataHandler.AddTag(tag);          // dodaj AO/DO tag bez skenera
-                }
+                RefreshGrid();
             }
         }
 
         // Uklanjanje taga
         private void RemoveTagBtn_Click(object sender, RoutedEventArgs e)
         {
-            /*if (TagsGrid.SelectedItem is Tag selectedTag)
+            // Dobijamo tag[ove] koji je selektovan u DataGrid-u
+            List<Tag> tagsToRemove = new List<Tag>();
+            foreach(Tag selectedTag in TagsGrid.SelectedItems)
             {
-                _tags.Remove(selectedTag);
-                RefreshGrid();
-            }*/
-
-            // Dobijamo tag koji je selektovan u DataGrid-u
-            Tag tagToRemove = TagsGrid.SelectedItem as Tag;
-            if (tagToRemove != null)
+                Console.WriteLine(selectedTag);
+                tagsToRemove.Add(selectedTag);
+            }
+            foreach(Tag tagToRemove in tagsToRemove)
             {
-                _tags.Remove(tagToRemove); // ukloni iz liste
-                RefreshGrid();
-
-                // Ako je AI/DI tag, zaustavi njegov skener
-                if (tagToRemove.type == TagType.AI || tagToRemove.type == TagType.DI)
+                if (tagToRemove != null)
                 {
-                    PLCDataHandler.TerminateScanner(tagToRemove.id);
-                }
+                    RefreshGrid();
 
-                // Ukloni iz DataConcentrator-a
-                PLCDataHandler.RemoveTag(tagToRemove.id);
+                    // Ako je AI/DI tag, zaustavi njegov skener
+                    if (tagToRemove.type == TagType.AI || tagToRemove.type == TagType.DI)
+                    {
+                        ContextClass.TerminateScanner(tagToRemove.id);
+                    }
+
+                    // Ukloni iz DataConcentrator-a
+                    ContextClass.RemoveTag(tagToRemove.id);
+                    PLCSimulatorManager.writtenAdresses.Remove(tagToRemove.IOAddress);
+                }
             }
 
-        }
 
+        }
         // Osvježavanje DataGrid-a
+        private string checkTagSpecificExist(Tag tag, string key)
+        {
+            return tag.TagSpecific.ContainsKey(key) ? tag.TagSpecific[key].ToString() : " - ";
+        }
+        private void RefreshGridValueOnly(int id, int idx)
+        {
+                var rowValue = TagsGrid.Items[idx].GetType().GetProperty("Value");
+                if (rowValue != null) rowValue.SetValue(TagsGrid.Items[idx], ContextClass.lastValue[id]);
+                TagsGrid.Items.Refresh(); 
+
+
+        }
         private void RefreshGrid()
         {
+           
+            //Treba prosirit
             TagsGrid.ItemsSource = null;
-            TagsGrid.ItemsSource = _tags;
-        }
+            var tagRows = new List<Dictionary<string, object>>();
+            foreach (Tag tag in ContextClass.Tags)
+            {
+                tagRows.Add(new Dictionary<string, object>
+                {
+                    ["Id"] = tag.id,
+                    ["Name"] = tag.name,
+                    ["Desc."] = tag.Description,
+                    ["Type"] = tag.type,
+                    ["Address"] = tag.IOAddress,
+                    ["Value"] = ContextClass.lastValue[tag.id].ToString(),
+                    ["Scan Time [AI, DI]"]  = checkTagSpecificExist(tag, "ScanTime"),
+                    ["Low Limit [AI, AO]"]  = checkTagSpecificExist(tag, "LowLimit"),
+                    ["High Limit [AI, AO]"] = checkTagSpecificExist(tag, "HighLimit"),
+                    ["Units [AI, AO]"]      = checkTagSpecificExist(tag, "Units"),
 
-        private void TagsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
-        }
-
-        // Osvežavanje AI tagova u comboBox-u
-        private void RefreshAITags()
-        {
-            AITagCombo.ItemsSource = _tags.Where(t => t.type == TagType.AI).ToList();
-            AITagCombo.DisplayMemberPath = "Description";
+                });
+            }
+            TagsGrid.ItemsSource = tagRows;
+            AITagCombo.ItemsSource = ContextClass.Tags.Where(t => t.type == TagType.AI);
         }
 
         // Dodavanje alarma
@@ -255,13 +286,13 @@ namespace ScadaGUI
                     return;
                 }
 
-                AlarmDirection dir = (AlarmDirection)Enum.Parse(typeof(AlarmDirection), dirItem.Content.ToString());
+                AlarmDirection dir = dirItem.Content.ToString().Equals("Greater or Equal") ? AlarmDirection.HIGH : AlarmDirection.LOW;
                 string message = AlarmMessageBox.Text;
 
-                int id = PLCDataHandler.Alarms.Count > 0 ? PLCDataHandler.Alarms.Max(a => a.Id) + 1 : 1;
+                int id = ContextClass.Alarms.Count > 0 ? ContextClass.Alarms.Max(a => a.Id) + 1 : 1;
 
                 Alarm alarm = new Alarm(id, selectedTag.id, limit, dir, message);
-                PLCDataHandler.AddAlarm(alarm);
+                ContextClass.AddAlarm(alarm);
 
                 RefreshAlarmsGrid(selectedTag.id);
             }
@@ -272,7 +303,7 @@ namespace ScadaGUI
         {
             if (AlarmsGrid.SelectedItem is Alarm selectedAlarm)
             {
-                PLCDataHandler.RemoveAlarm(selectedAlarm.Id);
+                ContextClass.RemoveAlarm(selectedAlarm.Id);
                 RefreshAlarmsGrid(selectedAlarm.TagId);
             }
         }
@@ -281,7 +312,7 @@ namespace ScadaGUI
         private void RefreshAlarmsGrid(int tagId)
         {
             AlarmsGrid.ItemsSource = null;
-            AlarmsGrid.ItemsSource = PLCDataHandler.Alarms.Where(a => a.TagId == tagId).ToList();
+            AlarmsGrid.ItemsSource = ContextClass.Alarms.Where(a => a.TagId == tagId).ToList();
         }
     }
 }

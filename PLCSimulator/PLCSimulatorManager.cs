@@ -17,7 +17,8 @@ namespace PLCSimulator
     /// </summary>
     public class PLCSimulatorManager
     {
-        private Dictionary<string, double> addressValues;
+        public static Dictionary<string, double> addressValues;
+        public static List<string> writtenAdresses;
         private object locker = new object();
         private Thread t1;
         private Thread t2;
@@ -25,6 +26,8 @@ namespace PLCSimulator
         public PLCSimulatorManager()
         {
             addressValues = new Dictionary<string, double>();
+            writtenAdresses = new List<string>();
+
 
             // AI
             addressValues.Add("ADDR001", 0);
@@ -55,10 +58,17 @@ namespace PLCSimulator
 
         public void StartPLCSimulator()
         {
-            t1 = new Thread(GeneratingAnalogInputs);
+
+            t1 = new Thread(GeneratingAnalogInputs)
+            {
+                IsBackground = true,
+            };
             t1.Start();
 
-            t2 = new Thread(GeneratingDigitalInputs);
+            t2 = new Thread(GeneratingDigitalInputs)
+            {
+                IsBackground = true,
+            };
             t2.Start();
         }
 
@@ -74,6 +84,8 @@ namespace PLCSimulator
                     addressValues["ADDR002"] = 100 * DateTime.Now.Second / 60; //RAMP
                     addressValues["ADDR003"] = 50 * Math.Cos((double)DateTime.Now.Second / 60 * Math.PI); //COS
                     addressValues["ADDR004"] = RandomNumberBetween(0, 50);  //rand
+
+
                 }
             }
         }
@@ -118,6 +130,7 @@ namespace PLCSimulator
                     {
                         addressValues["ADDR012"] = 0;
                     }
+
 
                 }
             }

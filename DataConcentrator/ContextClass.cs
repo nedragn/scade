@@ -22,7 +22,7 @@ namespace DataConcentrator
     /// 
     /// GUI (tvoj WPF) može da se poveže na ove evente i prikazuje vrednosti/alarme.
     /// </summary>
-    public static class PLCDataHandler
+    public static class ContextClass
     {
         // --- Simulator i sinhronizacija ---
         private static PLCSimulatorManager plcSim = null; // čuva instancu PLCSimulator-a
@@ -36,7 +36,7 @@ namespace DataConcentrator
         // --- Threading / skeneri ---
         private static readonly Dictionary<int, Thread> activeScannerThreads = new Dictionary<int, Thread>(); // za svaki tag id čuvamo thread koji ga skenira
         private static readonly Dictionary<int, bool> stopFlags = new Dictionary<int, bool>(); // zastavice za gašenje skenera
-        private static readonly Dictionary<int, double> lastValue = new Dictionary<int, double>(); // poslednja poznata vrednost za svaki tag
+        public static readonly Dictionary<int, double> lastValue = new Dictionary<int, double>(); // poslednja poznata vrednost za svaki tag
         private static readonly object stateLock = new object(); // lock da sinhronizujemo pristup gornjim strukturama
 
         // --- Eventi ---
@@ -64,18 +64,24 @@ namespace DataConcentrator
         /// <summary>
         /// Dodaje tag u listu (ali ne startuje njegovo skeniranje).
         /// </summary>
-        public static void AddTag(Tag tag)
+        public static Boolean AddTag(Tag tag)
         {
+            Boolean isTagValid = tag.IsTagValid();
+            if (!tag.IsTagValid()) return false;
+
             lock (stateLock)
             {
                 if (!Tags.Any(t => t.id == tag.id)) // dodaj samo ako ne postoji već tag sa istim id
                 {
+
                     Tags.Add(tag);
+                    if( tag.type == TagType.DI || tag.type == TagType.AI ) StartScanner(tag);
                 }
                 // inicijalno postavi lastValue na NaN (znači da još nemamo očitanu vrednost)
                 if (!lastValue.ContainsKey(tag.id))
                     lastValue[tag.id] = double.NaN;
             }
+            return true;
         }
 
         /// <summary>
@@ -89,8 +95,10 @@ namespace DataConcentrator
                     TerminateScanner(tagId); // prvo ugasi skener za taj tag
 
                 Tags.RemoveAll(t => t.id == tagId); // ukloni tag iz liste
-                lastValue.Remove(tagId);           // ukloni njegovu poslednju vrednost
+                lastValue.Remove(tagId);
+                stopFlags.Remove(tagId);
             }
+            
         }
 
         /// <summary>
@@ -159,7 +167,7 @@ namespace DataConcentrator
                 {
                     try
                     {
-                        if (!th.Join(1000)) // sačekaj do 1s da se thread završi
+                        if (!th.Join(50)) // sačekaj do 1s da se thread završi
                         {
                             try { th.Abort(); } catch { } // ako neće lepo da se ugasi, nasilno ga prekini
                         }
@@ -167,8 +175,7 @@ namespace DataConcentrator
                     catch { }
                     activeScannerThreads.Remove(tagId); // izbaci iz rečnika
                 }
-                stopFlags.Remove(tagId);
-                lastValue.Remove(tagId);
+                
             }
         }
 
@@ -226,16 +233,7 @@ namespace DataConcentrator
         /// </summary>
         private static void ScannerLoop(Tag tag)
         {
-            int intervalMs = 1000; // default 1s interval
-            try
-            {
-                if (tag.TagSpecific != null && tag.TagSpecific.ContainsKey("ScanTime"))
-                {
-                    intervalMs = Convert.ToInt32(tag.TagSpecific["ScanTime"]);
-                    if (intervalMs <= 0) intervalMs = 1000;
-                }
-            }
-            catch { intervalMs = 1000; }
+            int intervalMs = (int)tag.TagSpecific["ScanTime"]; // default 1s interval
 
             while (true)
             {
@@ -257,15 +255,14 @@ namespace DataConcentrator
                     {
                         changed = true;
                         lastValue[tag.id] = value; // upamti novu vrednost
-                        if (tag.TagSpecific == null) tag.TagSpecific = new Dictionary<string, object>();
-                        tag.TagSpecific["Value"] = value; // snimi i u sam tag
+                        tag.value = value; // snimi i u sam tag
                     }
                 }
 
                 if (changed)
                 {
                     // obavesti sve pretplaćene da se vrednost promenila
-                    try { ValueChanged?.Invoke(null, EventArgs.Empty); } catch { }
+                    try { ValueChanged?.Invoke(tag, EventArgs.Empty); } catch { }
 
                     // proveri sve alarme vezane za ovaj tag
                     List<Alarm> alarmsForTag;
@@ -293,7 +290,7 @@ namespace DataConcentrator
                     }
                 }
 
-                try { Thread.Sleep(intervalMs); } catch { break; } // čekaj sledeći ciklus
+                try { Thread.Sleep(intervalMs); Console.Write("Spava"); } catch { break; } // čekaj sledeći ciklus
             }
 
             // kada petlja završi, očisti strukture

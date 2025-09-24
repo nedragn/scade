@@ -31,14 +31,9 @@ namespace DataConcentrator
             Message = message;
         }
 
-        
-        public bool checkAlarm(double currentValue)
+        public Boolean checkAlarm(double value)
         {
-            if (Direction == AlarmDirection.HIGH && currentValue > LimitValue)
-                return true;
-            if (Direction == AlarmDirection.LOW && currentValue < LimitValue)
-                return true;
-            return false;
+            return this.Direction == AlarmDirection.HIGH ? value >= this.LimitValue : value <= this.LimitValue;  
         }
     }
 }

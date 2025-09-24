@@ -43,7 +43,7 @@
                 <TextBlock Text="Description:" Width="100" Margin="20 0 0 0" VerticalAlignment="Center"/>
                 <TextBox x:Name="DescriptionBox" Width="200"/>
                 <TextBlock Text="I/O Address:" Width="100" Margin="20 0 0 0" VerticalAlignment="Center"/>
-                <TextBox x:Name="AddressBox" Width="150"/>
+                <ComboBox x:Name="AddressBox" Width="150"/>
             </StackPanel>
 
             <!-- Scan polja za DI/AI -->
@@ -87,8 +87,8 @@
 
                     <TextBlock Text="Direction:" Width="70" Margin="10 0 0 0" VerticalAlignment="Center"/>
                     <ComboBox x:Name="DirectionCombo" Width="80">
-                        <ComboBoxItem Content="HIGH"/>
-                        <ComboBoxItem Content="LOW"/>
+                        <ComboBoxItem Content="Greater or Equal"/>
+                        <ComboBoxItem Content="Lower or Equal"/>
                     </ComboBox>
 
                     <TextBlock Text="Message:" Width="70" Margin="10 0 0 0" VerticalAlignment="Center"/>
@@ -100,12 +100,12 @@
                     <Button x:Name="RemoveAlarmBtn" Content="Remove Alarm" Width="100" Margin="5" Click="RemoveAlarmBtn_Click"/>
                 </StackPanel>
 
-                <DataGrid x:Name="AlarmsGrid" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Single" Height="100"/>
+                <DataGrid x:Name="AlarmsGrid" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Extended" Height="100"/>
             </StackPanel>
         </StackPanel>
 
         <!-- DataGrid za prikaz tagova -->
-        <DataGrid x:Name="TagsGrid" Grid.Row="1" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Single"/>
+        <DataGrid x:Name="TagsGrid" Grid.Row="1" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Extended"/>
     </Grid>
 </Window>
 

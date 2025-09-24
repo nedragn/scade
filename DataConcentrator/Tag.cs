@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Messaging;
@@ -14,9 +15,11 @@ namespace DataConcentrator
     public class Tag
     {
         public int id { get; set; }
+        public string name { get; set; }
         public TagType type { get; set; }
         public string Description { get; set; }
         public string IOAddress { get; set; }
+        public double value { get; set; }    
         // Tag specific.
         public Dictionary<string, object> TagSpecific { get; set; }
         private List<string> TagSpecificKeysDI { get; set; } = new List<string> { "ScanTime", "Scan" };
@@ -24,9 +27,10 @@ namespace DataConcentrator
         private List<string> TagSpecificKeysAI { get; set; } = new List<string> { "LowLimit", "HighLimit", "Units", "Alarms", "ScanTime", "Scan" };
         private List<string> TagSpecificKeysAO { get; set; } = new List<string> { "LowLimit", "HighLimit", "Units", "InitValue"};
         //Constructs foe each tag type.
-        public Tag(int id, TagType type, string description, string iOAddress, int ScanTime, Boolean Scan)
+        public Tag(int id, string name, TagType type, string description, string iOAddress, int ScanTime, Boolean Scan)
         {
             this.id = id;
+            this.name = name;
             this.type = type;
             this.Description = description;
             this.IOAddress = iOAddress;
@@ -35,9 +39,10 @@ namespace DataConcentrator
             this.TagSpecific["ScanTime"] = ScanTime;
             this.TagSpecific["Scan"] = Scan;
         }
-        public Tag(int id, TagType type, string description, string iOAddress, float InitValue)
+        public Tag(int id, string name, TagType type, string description, string iOAddress, float InitValue)
         {
             this.id = id;
+            this.name = name;
             this.type = type;
             this.Description = description;
             this.IOAddress = iOAddress;
@@ -45,9 +50,10 @@ namespace DataConcentrator
             this.TagSpecific = new Dictionary<string, object>();
             this.TagSpecific["InitValue"] = InitValue;
         }
-        public Tag(int id, TagType type, string description, string iOAddress, float LowLimit, float HighLimit, string Units, float InitValue)
+        public Tag(int id, string name, TagType type, string description, string iOAddress, float LowLimit, float HighLimit, string Units, float InitValue)
         {
             this.id = id;
+            this.name = name;
             this.type = type;
             this.Description = description;
             this.IOAddress = iOAddress;
@@ -58,10 +64,11 @@ namespace DataConcentrator
             this.TagSpecific["Units"] = Units;
             this.TagSpecific["InitValue"] = InitValue;
         }
-        public Tag(int id, TagType type, string description, string iOAddress, float LowLimit, float HighLimit, string Units,
+        public Tag(int id, string name, TagType type, string description, string iOAddress, float LowLimit, float HighLimit, string Units,
     List<Alarm> Alarms, int ScanTime, Boolean Scan)
         {
             this.id = id;
+            this.name = name;
             this.type = type;
             this.Description = description;
             this.IOAddress = iOAddress;
@@ -74,7 +81,7 @@ namespace DataConcentrator
             this.TagSpecific["ScanTime"] = ScanTime;
             this.TagSpecific["Scan"] = Scan;
         }
-        public Boolean IsValid()
+        public Boolean IsTagValid() // Should ideally move this to ctxClass
         {
             Boolean isValid = true;
             switch (this.type)
@@ -98,6 +105,7 @@ namespace DataConcentrator
         {
             foreach (string key in TagSpecificKeys)
             {
+                Console.WriteLine(key);
                 if (!TagSpecific.ContainsKey(key))
                 {
                     Console.WriteLine($"Tag must contain {key}");
@@ -107,6 +115,7 @@ namespace DataConcentrator
                 if(key == "ScanTime")
                 {
                     int ScanTime = Convert.ToInt32(TagSpecific["ScanTime"]); //Null = 0
+                    Debug.WriteLine($"ScanTime: {ScanTime}");
                     if (ScanTime <= 0)
                     {
                         Console.WriteLine($"Scan time must be bigger then 0ms");
@@ -115,11 +124,6 @@ namespace DataConcentrator
 
                 }
 
-            }
-            if (!TagSpecific.Keys.Equals(TagSpecificKeys))
-            {
-                Console.WriteLine($"Tag doesn't conatin all necessary attributes.");
-                isValid = false;
             }
 
 
