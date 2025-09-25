@@ -73,6 +73,7 @@
             <StackPanel Orientation="Horizontal" Margin="0 10">
                 <Button x:Name="AddTagBtn" Content="Add Tag" Width="100" Margin="5" Click="AddTagBtn_Click"/>
                 <Button x:Name="RemoveTagBtn" Content="Remove Tag" Width="100" Margin="5" Click="RemoveTagBtn_Click"/>
+                <Button x:Name="ReportBtn" Content="Report" Width="100" Margin="650 5 5 5" Click="ReportBtn_Click"/>
             </StackPanel>
 
             <StackPanel Margin="0 20 0 0" Orientation="Vertical">
@@ -99,13 +100,16 @@
                     <Button x:Name="AddAlarmBtn" Content="Add Alarm" Width="100" Margin="5" Click="AddAlarmBtn_Click"/>
                     <Button x:Name="RemoveAlarmBtn" Content="Remove Alarm" Width="100" Margin="5" Click="RemoveAlarmBtn_Click"/>
                 </StackPanel>
-
+                <TextBlock Text="Added Alarms" FontWeight="Bold" Margin="0 5"/>
                 <DataGrid x:Name="AlarmsGrid" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Extended" Height="100"/>
+                <TextBlock Text="Activated Alarms" FontWeight="Bold" Margin="0 5"/>
+                <DataGrid x:Name="ActivatedAlarmsGrid" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Extended" Height="100"/>
             </StackPanel>
         </StackPanel>
 
         <!-- DataGrid za prikaz tagova -->
-        <DataGrid x:Name="TagsGrid" Grid.Row="1" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Extended"/>
+
+        <DataGrid x:Name="TagsGrid" Grid.Row="1" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Extended" Margin="0,20,0,0"/>
     </Grid>
 </Window>
 

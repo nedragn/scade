@@ -42,6 +42,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Xml.Linq;
 using System.Threading;
+using System.Diagnostics.Tracing;
 
 namespace ScadaGUI
 {
@@ -88,6 +89,18 @@ namespace ScadaGUI
                 });
             }
 
+            columnNames = new List<string> {
+                "Id", "Tag Id", "Limit Value", "Direction", "Message", "Activation Time"
+            };
+            foreach (string columnName in columnNames)
+            {
+                ActivatedAlarmsGrid.Columns.Add(new DataGridTextColumn
+                {
+                    Header = columnName,
+                    Binding = new Binding($"[{columnName}]")
+                });
+            }
+
             // Pretplata na eventove DataConcentrator-a
             ContextClass.ValueChanged += ContextClass_ValueChanged;
             ContextClass.AlarmRaised += ContextClass_AlarmRaised;
@@ -98,8 +111,10 @@ namespace ScadaGUI
         // Event handler za promenu vrednosti tagova
         private void ContextClass_ValueChanged(object sender, EventArgs e)
         {
-            Console.WriteLine(sender);
-            Dispatcher.Invoke(new Action(() => { RefreshGrid(); }));
+            Console.WriteLine(((Tag)sender).id);
+            Dispatcher.Invoke(() => {
+                RefreshTagsGrid();
+            });
         }
 
         // Event handler za aktiviranje alarma
@@ -211,7 +226,6 @@ namespace ScadaGUI
                 RefreshGrid();
             }
         }
-
         // Uklanjanje taga
         private void RemoveTagBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -242,23 +256,17 @@ namespace ScadaGUI
 
 
         }
+        private void ReportBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
         // Osvježavanje DataGrid-a
         private string checkTagSpecificExist(Tag tag, string key)
         {
             return tag.TagSpecific.ContainsKey(key) ? tag.TagSpecific[key].ToString() : " - ";
         }
-        private void RefreshGridValueOnly(int id, int idx)
+        private void RefreshTagsGrid()
         {
-                var rowValue = TagsGrid.Items[idx].GetType().GetProperty("Value");
-                if (rowValue != null) rowValue.SetValue(TagsGrid.Items[idx], ContextClass.lastValue[id]);
-                TagsGrid.Items.Refresh(); 
-
-
-        }
-        private void RefreshGrid()
-        {
-           
-            //Treba prosirit
             TagsGrid.ItemsSource = null;
             var tagRows = new List<Dictionary<string, object>>();
             foreach (Tag tag in ContextClass.Tags)
@@ -271,14 +279,18 @@ namespace ScadaGUI
                     ["Type"] = tag.type,
                     ["Address"] = tag.IOAddress,
                     ["Value"] = ContextClass.lastValue[tag.id].ToString(),
-                    ["Scan Time [AI, DI]"]  = checkTagSpecificExist(tag, "ScanTime"),
-                    ["Low Limit [AI, AO]"]  = checkTagSpecificExist(tag, "LowLimit"),
+                    ["Scan Time [AI, DI]"] = checkTagSpecificExist(tag, "ScanTime"),
+                    ["Low Limit [AI, AO]"] = checkTagSpecificExist(tag, "LowLimit"),
                     ["High Limit [AI, AO]"] = checkTagSpecificExist(tag, "HighLimit"),
-                    ["Units [AI, AO]"]      = checkTagSpecificExist(tag, "Units"),
+                    ["Units [AI, AO]"] = checkTagSpecificExist(tag, "Units"),
 
                 });
             }
             TagsGrid.ItemsSource = tagRows;
+        }
+        private void RefreshAlarmsGrid()
+        {
+
 
             var alarmRows = new List<Dictionary<string, object>>();
             foreach (Alarm alarm in ContextClass.Alarms)
@@ -294,15 +306,25 @@ namespace ScadaGUI
 
                 });
             }
-            AITagCombo.ItemsSource = ContextClass.Tags.Where(t => t.type == TagType.AI);
+            List<Tag> AITags = ContextClass.Tags.Where(t => t.type == TagType.AI).ToList();
+            AITagCombo.ItemsSource = from tag in AITags select tag.name;
             AlarmsGrid.ItemsSource = alarmRows;
+        }
+        private void RefreshGrid()
+        {
+
+            //Treba prosirit
+            RefreshTagsGrid();
+            RefreshAlarmsGrid();
         }
 
         // Dodavanje alarma
         private void AddAlarmBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (AITagCombo.SelectedItem is Tag selectedTag)
+            
+            if (AITagCombo.SelectedItem is int selectedTagId)
             {
+                Tag selectedTag = ContextClass.Tags.Where(t => t.id == selectedTagId).First();
                 if (!float.TryParse(LimitValueBox.Text, out float limit))
                 {
                     MessageBox.Show("Neispravan limit value!");
@@ -322,7 +344,7 @@ namespace ScadaGUI
                 Alarm alarm = new Alarm(id, selectedTag.id, limit, dir, message);
                 ContextClass.AddAlarm(alarm);
 
-                RefreshAlarmsGrid(selectedTag.id);
+                RefreshAlarmsGrid();
             }
         }
         
@@ -332,16 +354,12 @@ namespace ScadaGUI
             if (AlarmsGrid.SelectedItem is Alarm selectedAlarm)
             {
                 ContextClass.RemoveAlarm(selectedAlarm.Id);
-                RefreshAlarmsGrid(selectedAlarm.TagId);
+                RefreshAlarmsGrid();
             }
         }
 
         // Osvežavanje DataGrid-a za alarme
-        private void RefreshAlarmsGrid(int tagId)
-        {
-            AlarmsGrid.ItemsSource = null;
-            AlarmsGrid.ItemsSource = ContextClass.Alarms.Where(a => a.TagId == tagId).ToList();
-        }
+
     }
 }
 

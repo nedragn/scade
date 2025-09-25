@@ -110,6 +110,11 @@ namespace DataConcentrator
             {
                 if (!Alarms.Any(a => a.Id == alarm.Id))
                     Alarms.Add(alarm);
+                var tag = Tags[alarm.TagId];
+                if (!tag.TagSpecific.ContainsKey("Alarms"))
+                    tag.TagSpecific["Alarms"] = new List<Alarm>();
+
+                ((List<Alarm>)tag.TagSpecific["Alarms"]).Add(alarm);
             }
         }
 
@@ -290,7 +295,7 @@ namespace DataConcentrator
                     }
                 }
 
-                try { Thread.Sleep(intervalMs); Console.Write("Spava"); } catch { break; } // čekaj sledeći ciklus
+                try { Thread.Sleep(intervalMs); } catch { break; } // čekaj sledeći ciklus
             }
 
             // kada petlja završi, očisti strukture
