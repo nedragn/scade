@@ -9,19 +9,6 @@ using PLCSimulator;
 
 namespace DataConcentrator
 {
-    /// <summary>
-    /// PLCDataHandler – glavna klasa za rad sa simulatorom i tagovima.
-    /// 
-    /// Zadužena je za:
-    /// - startovanje PLCSimulator-a
-    /// - čuvanje liste tagova i alarma u memoriji
-    /// - pokretanje thread-ova koji "skenuju" tagove u određenom intervalu
-    /// - podizanje eventa (ValueChanged) kada se vrednost nekog taga promeni
-    /// - podizanje eventa (AlarmRaised) kada se aktivira alarm
-    /// - gašenje skenera i simulatora kada zatvaramo aplikaciju
-    /// 
-    /// GUI (tvoj WPF) može da se poveže na ove evente i prikazuje vrednosti/alarme.
-    /// </summary>
     public static class ContextClass
     {
         // --- Simulator i sinhronizacija ---
@@ -36,7 +23,7 @@ namespace DataConcentrator
         // --- Threading / skeneri ---
         private static readonly Dictionary<int, Thread> activeScannerThreads = new Dictionary<int, Thread>(); // za svaki tag id čuvamo thread koji ga skenira
         private static readonly Dictionary<int, bool> stopFlags = new Dictionary<int, bool>(); // zastavice za gašenje skenera
-        public static readonly Dictionary<int, double> lastValue = new Dictionary<int, double>(); // poslednja poznata vrednost za svaki tag
+        //public static readonly Dictionary<int, double> lastValue = new Dictionary<int, double>(); // poslednja poznata vrednost za svaki tag
         private static readonly object stateLock = new object(); // lock da sinhronizujemo pristup gornjim strukturama
 
         // --- Eventi ---
@@ -71,15 +58,12 @@ namespace DataConcentrator
 
             lock (stateLock)
             {
-                if (!Tags.Any(t => t.id == tag.id)) // dodaj samo ako ne postoji već tag sa istim id
+                if (!Tags.Any(t => t.id == tag.id) && !Tags.Any(t => t.name == tag.name)) // dodaj samo ako ne postoji već tag sa istim id
                 {
 
                     Tags.Add(tag);
                     if( tag.type == TagType.DI || tag.type == TagType.AI ) StartScanner(tag);
                 }
-                // inicijalno postavi lastValue na NaN (znači da još nemamo očitanu vrednost)
-                if (!lastValue.ContainsKey(tag.id))
-                    lastValue[tag.id] = double.NaN;
             }
             return true;
         }
@@ -95,7 +79,8 @@ namespace DataConcentrator
                     TerminateScanner(tagId); // prvo ugasi skener za taj tag
 
                 Tags.RemoveAll(t => t.id == tagId); // ukloni tag iz liste
-                lastValue.Remove(tagId);
+                Alarms.RemoveAll(a => a.TagId ==  tagId);
+                ShiftTagIds();
                 stopFlags.Remove(tagId);
             }
             
@@ -112,8 +97,9 @@ namespace DataConcentrator
                     Alarms.Add(alarm);
                 var tag = Tags[alarm.TagId];
                 if (!tag.TagSpecific.ContainsKey("Alarms"))
+                    Console.WriteLine($"Tag doesn't contain any alarms yet!");
                     tag.TagSpecific["Alarms"] = new List<Alarm>();
-
+                Console.WriteLine("Added alarm");
                 ((List<Alarm>)tag.TagSpecific["Alarms"]).Add(alarm);
             }
         }
@@ -212,15 +198,18 @@ namespace DataConcentrator
         /// Forsira izlaz (piše vrednost u PLC adresu).
         /// Koristi se za AO/DO tagove da "pošaljemo" vrednost u simulator.
         /// </summary>
-        public static void ForceOutput(string address, double value)
+        public static void ForceOutput(Tag tag)
         {
-            if (string.IsNullOrEmpty(address)) return;
             lock (plcSimLock)
             {
                 if (plcSim == null) ConnectAndStartSimulator();
                 try
                 {
-                    plcSim.SetAnalogValue(address, value); // direktno upiši vrednost
+                    if(tag.type == TagType.DO)
+                    plcSim.SetDigitalValue(tag.IOAddress, tag.value);
+
+                    if (tag.type == TagType.AO)
+                        plcSim.SetAnalogValue(tag.IOAddress, tag.value);
                 }
                 catch (Exception ex)
                 {
@@ -230,7 +219,15 @@ namespace DataConcentrator
         }
 
         // --- PRIVATNE METODE ---
-
+        private static void ShiftTagIds()
+        {
+            int idx = 0;
+            foreach(Tag tag in Tags)
+            {
+                tag.id = idx;
+                idx++;
+            }
+        }
         /// <summary>
         /// Petlja koja se izvršava u posebnom thread-u i stalno čita vrednost za tag.
         /// Ako se vrednost promeni -> podiže event.
@@ -252,22 +249,16 @@ namespace DataConcentrator
                 // pročitaj vrednost iz simulatora
                 double value = ReadValueFromSimulator(tag.IOAddress);
 
-                bool changed = false;
                 lock (stateLock)
                 {
-                    // detektuj promenu vrednosti (ako je prva vrednost ili je različita)
-                    if (!lastValue.ContainsKey(tag.id) || double.IsNaN(lastValue[tag.id]) || Math.Abs(lastValue[tag.id] - value) > 1e-6)
-                    {
-                        changed = true;
-                        lastValue[tag.id] = value; // upamti novu vrednost
-                        tag.value = value; // snimi i u sam tag
-                    }
+                    tag.prevValue = tag.value;
+                    tag.value = value; // snimi i u sam tag
                 }
 
-                if (changed)
+                if (true)
                 {
                     // obavesti sve pretplaćene da se vrednost promenila
-                    try { ValueChanged?.Invoke(tag, EventArgs.Empty); } catch { }
+                    ValueChanged?.Invoke(tag, EventArgs.Empty);
 
                     // proveri sve alarme vezane za ovaj tag
                     List<Alarm> alarmsForTag;
@@ -305,8 +296,6 @@ namespace DataConcentrator
                     activeScannerThreads.Remove(tag.id);
                 if (stopFlags.ContainsKey(tag.id))
                     stopFlags.Remove(tag.id);
-                if (lastValue.ContainsKey(tag.id))
-                    lastValue.Remove(tag.id);
             }
         }
 

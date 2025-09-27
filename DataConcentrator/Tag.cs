@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PLCSimulator;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -19,14 +20,17 @@ namespace DataConcentrator
         public TagType type { get; set; }
         public string Description { get; set; }
         public string IOAddress { get; set; }
-        public double value { get; set; }    
+        public double value { get; set; }
+        public double prevValue { get; set; }
+        public bool isInput { get; set; } = true;
         // Tag specific.
         public Dictionary<string, object> TagSpecific { get; set; }
         private List<string> TagSpecificKeysDI { get; set; } = new List<string> { "ScanTime", "Scan" };
-        private List<string> TagSpecificKeysDO { get; set; } = new List<string> { "InitValue"};
+        private List<string> TagSpecificKeysDO { get; set; } = new List<string> {};
         private List<string> TagSpecificKeysAI { get; set; } = new List<string> { "LowLimit", "HighLimit", "Units", "Alarms", "ScanTime", "Scan" };
-        private List<string> TagSpecificKeysAO { get; set; } = new List<string> { "LowLimit", "HighLimit", "Units", "InitValue"};
+        private List<string> TagSpecificKeysAO { get; set; } = new List<string> { "LowLimit", "HighLimit", "Units"};
         //Constructs foe each tag type.
+        //DI
         public Tag(int id, string name, TagType type, string description, string iOAddress, int ScanTime, Boolean Scan)
         {
             this.id = id;
@@ -34,11 +38,13 @@ namespace DataConcentrator
             this.type = type;
             this.Description = description;
             this.IOAddress = iOAddress;
+            this.value = PLCSimulatorManager.addressValues[this.IOAddress];
 
             this.TagSpecific = new Dictionary<string, object>();
             this.TagSpecific["ScanTime"] = ScanTime;
             this.TagSpecific["Scan"] = Scan;
         }
+        //DO
         public Tag(int id, string name, TagType type, string description, string iOAddress, float InitValue)
         {
             this.id = id;
@@ -46,9 +52,11 @@ namespace DataConcentrator
             this.type = type;
             this.Description = description;
             this.IOAddress = iOAddress;
+            this.value = InitValue;
+            this.isInput = false;
 
             this.TagSpecific = new Dictionary<string, object>();
-            this.TagSpecific["InitValue"] = InitValue;
+            //this.TagSpecific["InitValue"] = InitValue;
         }
         public Tag(int id, string name, TagType type, string description, string iOAddress, float LowLimit, float HighLimit, string Units, float InitValue)
         {
@@ -57,12 +65,14 @@ namespace DataConcentrator
             this.type = type;
             this.Description = description;
             this.IOAddress = iOAddress;
+            this.value = InitValue;
+            this.isInput = false;
 
             this.TagSpecific = new Dictionary<string, object>();
             this.TagSpecific["LowLimit"] = LowLimit;
             this.TagSpecific["HighLimit"] = HighLimit;
             this.TagSpecific["Units"] = Units;
-            this.TagSpecific["InitValue"] = InitValue;
+            //this.TagSpecific["InitValue"] = InitValue;
         }
         public Tag(int id, string name, TagType type, string description, string iOAddress, float LowLimit, float HighLimit, string Units,
     List<Alarm> Alarms, int ScanTime, Boolean Scan)
@@ -72,6 +82,7 @@ namespace DataConcentrator
             this.type = type;
             this.Description = description;
             this.IOAddress = iOAddress;
+            this.value = PLCSimulatorManager.addressValues[this.IOAddress];
 
             this.TagSpecific = new Dictionary<string, object>();
             this.TagSpecific["LowLimit"] = LowLimit;

@@ -19,7 +19,9 @@ namespace DataConcentrator
         public int TagId { get; set; }  // ID taga nad kojim je alarm
         public double LimitValue { get; set; }  // Granica za aktivaciju alarma
         public AlarmDirection Direction { get; set; }  // Iznad / Ispod
+        public string DirectionDisplay { get; set; }
         public string Message { get; set; }  // Poruka alarma
+        public bool isActivated { get; set; } = false;
 
         
         public Alarm(int id, int tagId, double limitValue, AlarmDirection direction, string message)
@@ -28,6 +30,7 @@ namespace DataConcentrator
             TagId = tagId;
             LimitValue = limitValue;
             Direction = direction;
+            DirectionDisplay = direction == AlarmDirection.HIGH ? " Greater or Equal " : "Lower or Equal"; 
             Message = message;
         }
 
