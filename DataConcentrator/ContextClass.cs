@@ -16,7 +16,10 @@ namespace DataConcentrator
         private static readonly object plcSimLock = new object(); // služi za zaključavanje pristupa simulatoru iz više thread-ova
 
         // --- In-memory store (memorijske liste, bez baze) ---
-        public static readonly List<Tag> Tags = new List<Tag>();                  // svi tagovi koje sistem zna
+        public static Dictionary<DateTime,Dictionary<string, double>> InputTagsValueHistory = new Dictionary<DateTime, Dictionary<string, double>>();
+        public static readonly List<Tag> Tags = new List<Tag>();
+        public static List<Tag> InputTags = new List<Tag>();
+        public static List<Tag> OutputTags = new List<Tag>();
         public static readonly List<Alarm> Alarms = new List<Alarm>();            // svi alarmi
         public static readonly List<ActivatedAlarm> ActivatedAlarms = new List<ActivatedAlarm>(); // aktivirani alarmi (koji su se desili)
 
@@ -62,7 +65,11 @@ namespace DataConcentrator
                 {
 
                     Tags.Add(tag);
-                    if( tag.type == TagType.DI || tag.type == TagType.AI ) StartScanner(tag);
+                    UpdateInputOutputTags();
+                    if (tag.isInput) 
+                        StartScanner(tag);
+
+
                 }
             }
             return true;
@@ -79,8 +86,9 @@ namespace DataConcentrator
                     TerminateScanner(tagId); // prvo ugasi skener za taj tag
 
                 Tags.RemoveAll(t => t.id == tagId); // ukloni tag iz liste
-                Alarms.RemoveAll(a => a.TagId ==  tagId);
                 ShiftTagIds();
+                UpdateInputOutputTags();
+                Alarms.RemoveAll(a => a.TagId ==  tagId);
                 stopFlags.Remove(tagId);
             }
             
@@ -101,6 +109,7 @@ namespace DataConcentrator
                     tag.TagSpecific["Alarms"] = new List<Alarm>();
                 Console.WriteLine("Added alarm");
                 ((List<Alarm>)tag.TagSpecific["Alarms"]).Add(alarm);
+                UpdateInputOutputTags();
             }
         }
 
@@ -111,7 +120,9 @@ namespace DataConcentrator
         {
             lock (stateLock)
             {
+                //Treba dodati da se brise alarm i iz tag liste alarma
                 Alarms.RemoveAll(a => a.Id == alarmId);
+                ShiftAlarmIds();
             }
         }
 
@@ -205,11 +216,10 @@ namespace DataConcentrator
                 if (plcSim == null) ConnectAndStartSimulator();
                 try
                 {
-                    if(tag.type == TagType.DO)
-                    plcSim.SetDigitalValue(tag.IOAddress, tag.value);
-
-                    if (tag.type == TagType.AO)
-                        plcSim.SetAnalogValue(tag.IOAddress, tag.value);
+                    if(tag.type == TagType.DO) 
+                        plcSim.SetDigitalValue(tag.IOAddress, tag.currValue);
+                    if (tag.type == TagType.AO) 
+                        plcSim.SetAnalogValue(tag.IOAddress, tag.currValue);
                 }
                 catch (Exception ex)
                 {
@@ -219,12 +229,26 @@ namespace DataConcentrator
         }
 
         // --- PRIVATNE METODE ---
+        public static void UpdateInputOutputTags()
+        {
+            InputTags = Tags.Where(t => t.type == TagType.DI || t.type == TagType.AI).ToList();
+            OutputTags = Tags.Where(t => t.type == TagType.DO || t.type == TagType.AO).ToList();
+        }
         private static void ShiftTagIds()
         {
             int idx = 0;
             foreach(Tag tag in Tags)
             {
                 tag.id = idx;
+                idx++;
+            }
+        }
+        private static void ShiftAlarmIds()
+        {
+            int idx = 0;
+            foreach(Alarm alarm in Alarms)
+            {
+                alarm.Id = idx;
                 idx++;
             }
         }
@@ -251,8 +275,18 @@ namespace DataConcentrator
 
                 lock (stateLock)
                 {
-                    tag.prevValue = tag.value;
-                    tag.value = value; // snimi i u sam tag
+                    tag.prevValue = tag.currValue;
+                    tag.currValue = value; // snimi i u sam tag
+                    UpdateInputOutputTags();
+                    if(tag.type == TagType.AI) { 
+                        DateTime captureTime = DateTime.Now;
+                        if(!InputTagsValueHistory.ContainsKey(captureTime))
+                        InputTagsValueHistory.Add(captureTime,
+                            new Dictionary<string, double>());
+                        InputTagsValueHistory[captureTime].Add(tag.IOAddress, tag.currValue);
+                        //Console.WriteLine($"Value : {InputTagsValueHistory[captureTime][tag.IOAddress]}");
+
+                    }
                 }
 
                 if (true)
@@ -268,21 +302,18 @@ namespace DataConcentrator
                     }
                     foreach (var alarm in alarmsForTag)
                     {
-                        try
-                        {
-                            if (alarm.checkAlarm(value))
+                            if (alarm.checkAlarm(tag.currValue) &&
+                                !alarm.isActivated)
                             {
-                                var act = new ActivatedAlarm(alarm.Id, tag.Description ?? tag.IOAddress, alarm.Message);
+
+                                var act = new ActivatedAlarm(alarm.Id, tag.name ,alarm.Message);
                                 lock (stateLock)
                                 {
+                                    Alarms[alarm.Id].isActivated = true;
                                     ActivatedAlarms.Add(act); // zapamti da se desio alarm
                                 }
-                                TryPersistActivatedAlarm(act); // pokušaj upisa u bazu (ako implementiraš)
-
-                                try { AlarmRaised?.Invoke(null, EventArgs.Empty); } catch { }
+                                try { AlarmRaised?.Invoke(null, EventArgs.Empty); } catch { Console.WriteLine($"Alarm exception"); }
                             }
-                        }
-                        catch { }
                     }
                 }
 
@@ -313,25 +344,5 @@ namespace DataConcentrator
             }
         }
 
-        /// <summary>
-        /// Trenutno ne radi ništa osim što beleži grešku.
-        /// Kasnije ovde možeš dodati logiku da upisuješ aktivirane alarme u bazu.
-        /// </summary>
-        private static void TryPersistActivatedAlarm(ActivatedAlarm act)
-        {
-            try
-            {
-                // Primer:
-                // using (var ctx = new ContextClass())
-                // {
-                //     ctx.ActivatedAlarms.Add(act);
-                //     ctx.SaveChanges();
-                // }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("[PLCDataHandler] PersistActivatedAlarm failed: " + ex.Message);
-            }
-        }
     }
 }

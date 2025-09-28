@@ -45,6 +45,8 @@ using System.Threading;
 using System.Diagnostics.Tracing;
 using System.Windows.Input;
 using System.Runtime.Remoting.Contexts;
+using System.Windows.Media;
+using System.IO;
 
 namespace ScadaGUI
 {
@@ -67,8 +69,8 @@ namespace ScadaGUI
 
 
 
-            Tag testTag1 = new Tag(0,"Test tag 1", TagType.AI, " ", "ADDR001", -1, 1, "A", new List<Alarm>(), 100, true);
-            Tag testTag2 = new Tag(1, "Test tag 2", TagType.AI, " ", "ADDR002", -10, 10, "V", new List<Alarm>(), 100, true);
+            Tag testTag1 = new Tag(0,"Test tag 1", TagType.AI, " ", "ADDR001", -50, 50, "A", new List<Alarm>(), 1000, true);
+            Tag testTag2 = new Tag(1, "Test tag 2", TagType.AI, " ", "ADDR002", -10, 10, "V", new List<Alarm>(), 1000, true);
             Tag testTag3 = new Tag(2, "Test tag 3", TagType.DO, " ", "ADDR005", 1);
             Tag testTag4 = new Tag(3, "Test tag 4", TagType.AO, " ", "ADDR006", -10, 10, "V", (float)2.7);
 
@@ -76,45 +78,88 @@ namespace ScadaGUI
             ContextClass.AddTag(testTag2);
             ContextClass.AddTag(testTag3);
             ContextClass.AddTag(testTag4);
+            //ContextClass.OutputTags = ContextClass.Tags.Where(t => t.type == TagType.DO || t.type == TagType.AO).ToList();
             // Pretplata na eventove DataConcentrator-a
             ContextClass.ValueChanged += ContextClass_ValueChanged;
             ContextClass.AlarmRaised += ContextClass_AlarmRaised;
-            //RefreshGrid();
-            DataContext = this;
+            RefreshGrid();
+            
 
         }
         private void BeginningEditEventHandler(object sender, DataGridBeginningEditEventArgs e)
         {
             Tag tag = e.Row.Item as Tag;
             Console.WriteLine($"{tag} {tag.id}");
-            ContextClass.Tags[tag.id].prevValue = tag.value;
+            int tagIndexInOutputTags = ContextClass.OutputTags.IndexOf(tag);
+            ContextClass.OutputTags[tagIndexInOutputTags].prevValue = tag.currValue;
+            ContextClass.Tags[tag.id].prevValue = tag.currValue;
+            ContextClass.UpdateInputOutputTags();
         }
         private void CellEditEndingEventHandler(object sender, DataGridCellEditEndingEventArgs e)
         {
             if (e.Column.Header.ToString() == "Value")
             {
                 Tag editedTag = e.Row.Item as Tag;
-                editedTag = ContextClass.Tags[editedTag.id];
+                int tagIndexInOutputTags = ContextClass.OutputTags.IndexOf(editedTag);
+                editedTag = ContextClass.OutputTags[tagIndexInOutputTags];
+                Console.WriteLine($"{editedTag.currValue}");    
                 if (e.EditAction == DataGridEditAction.Commit)
                 {
                     Console.WriteLine($"Tag type {editedTag.type.GetType()}");
-                    if (editedTag.type == TagType.DO && !((int)editedTag.value == 0 || (int)editedTag.value == 1))
+                    if (editedTag.type == TagType.DO && !((int)editedTag.currValue == 0 || (int)editedTag.currValue == 1))
                     {
                         MessageBox.Show("Digital outputs can only be ON(1) or OFF(0).");
-                        ContextClass.Tags[editedTag.id].value = editedTag.prevValue;
+                        ContextClass.Tags[editedTag.id].currValue = editedTag.prevValue;
+                        ContextClass.UpdateInputOutputTags();
                         return;
                     }
                     else if (editedTag.type == TagType.AO &&
-                        ((float)editedTag.value <= (float)editedTag.TagSpecific["LowLimit"] ||
-                         (float)editedTag.value >= (float)editedTag.TagSpecific["HighLimit"]))
+                        ((float)editedTag.currValue <= (float)editedTag.TagSpecific["LowLimit"] ||
+                         (float)editedTag.currValue >= (float)editedTag.TagSpecific["HighLimit"]))
                     {
                         MessageBox.Show("Value out of bounds. What did you set the limits for? ");
-                        ContextClass.Tags[editedTag.id].value = editedTag.prevValue;
+                        ContextClass.Tags[editedTag.id].currValue = editedTag.prevValue;
+                        ContextClass.UpdateInputOutputTags();
                         return;
                     }
-                    else ContextClass.ForceOutput(editedTag);
+                    else
+                    {
+                        ContextClass.ForceOutput(editedTag);
+                        
+                        ContextClass.Tags[editedTag.id].currValue = editedTag.currValue;
+                        Console.WriteLine($"Edited tag value: {editedTag.currValue}");
+                        Console.WriteLine($"Edited tag value: {ContextClass.OutputTags[tagIndexInOutputTags].currValue}");
+                        Console.WriteLine($"Edited tag value: {tagIndexInOutputTags}");
+                        Console.WriteLine($"Edited tag value: {ContextClass.Tags[editedTag.id].currValue}");
+                        Console.WriteLine($"Edited tag value: {PLCSimulatorManager.addressValues[editedTag.IOAddress]}");
+                        ContextClass.UpdateInputOutputTags();
+                    }
+                    
                 }
+                RefreshOutputsGrid();
                 
+            }
+            if (e.Column.Header.ToString() == "Scan")
+            {
+                //Update
+                    Tag editedTag = e.Row.Item as Tag;
+                    int tagIndexInInputTags = ContextClass.InputTags.IndexOf(editedTag);
+                    editedTag = ContextClass.InputTags[tagIndexInInputTags];
+                    ContextClass.Tags[editedTag.id].TagSpecific["Scan"] = editedTag.TagSpecific["Scan"];
+                //Turn off scnars 
+                    if (!(bool)editedTag.TagSpecific["Scan"])ContextClass.TerminateScanner(editedTag.id);
+                    else ContextClass.StartScanner(editedTag);
+                    ContextClass.UpdateInputOutputTags();
+                RefreshInputsGrid();
+            }
+        }
+        private void AlarmCellEditEndingEventHandler(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if(e.Column.Header.ToString() == "Activated")
+            {
+                Alarm editedAlarm = e.Row.Item as Alarm;
+                editedAlarm = ContextClass.Alarms[editedAlarm.Id];
+                ContextClass.ActivatedAlarms.RemoveAll(a => a.AlarmId == editedAlarm.Id);
             }
         }
         private void TagLoadingRowsEventHandler(object sender, DataGridRowEventArgs e)
@@ -125,17 +170,18 @@ namespace ScadaGUI
 
             removeItem.Click += (senderClick, eventArgs) => {
                 ContextClass.RemoveTag((e.Row.Item as Tag).id);
-                //RefreshGrid();
+                RefreshGrid();
             };
             ctxMenu.Items.Add(removeItem);
             e.Row.ContextMenu = ctxMenu;
         }
+        private void ActivatedAlarmLoadingRowsEventHandler(object sender, DataGridRowEventArgs e)
+        {
+            e.Row.Background = Brushes.Red;
+        }
         private void ContextClass_ValueChanged(object sender, EventArgs e)
         {
-
         }
-
-        // Event handler za aktiviranje alarma
         private void ContextClass_AlarmRaised(object sender, EventArgs e)
         {
             Dispatcher.Invoke(() =>
@@ -145,6 +191,7 @@ namespace ScadaGUI
                 {
                     MessageBox.Show($"ALARM!\nTag: {lastAlarm.TagName}\nMessage: {lastAlarm.Message}\nTime: {lastAlarm.Time}");
                 }
+                RefreshAlarmsGrid();
             });
         }
 
@@ -241,7 +288,7 @@ namespace ScadaGUI
                 Console.WriteLine("Uslo!");
                 PLCSimulatorManager.writtenAdresses.Add(addr);
 
-                //RefreshGrid();
+                RefreshGrid();
             }
         }
         // Uklanjanje taga
@@ -249,7 +296,7 @@ namespace ScadaGUI
         {
             // Dobijamo tag[ove] koji je selektovan u DataGrid-u
             List<Tag> tagsToRemove = new List<Tag>();
-            foreach(Tag selectedTag in TagsGrid.SelectedItems)
+            foreach(Tag selectedTag in InputTagsGrid.SelectedItems)
             {
                 Console.WriteLine(selectedTag);
                 tagsToRemove.Add(selectedTag);
@@ -258,7 +305,7 @@ namespace ScadaGUI
             {
                 if (tagToRemove != null)
                 {
-                    //RefreshGrid();
+                    RefreshGrid();
 
                     // Ako je AI/DI tag, zaustavi njegov skener
                     if (tagToRemove.type == TagType.AI || tagToRemove.type == TagType.DI)
@@ -276,13 +323,48 @@ namespace ScadaGUI
         }
         private void ReportBtn_Click(object sender, RoutedEventArgs e)
         {
+            
+            string fileName = @"..\..\log.txt";
+            
+            using (var writer = new StreamWriter(fileName, append: true))
+            {
+                foreach(DateTime time in ContextClass.InputTagsValueHistory.Keys)
+                {
+                    
+                    //writer.WriteLine($"Time : {time}");
+                    foreach(string addr in ContextClass.InputTagsValueHistory[time].Keys)
+                    {
+                        ContextClass.InputTagsValueHistory[time].OrderBy(a => a.Key);
 
+                        Tag tagAtAddress = ContextClass.Tags.Where(t => t.IOAddress == addr).First();
+                        double lowLimit = (double)tagAtAddress.TagSpecific["LowLimit"];
+                        double highLimit = (double)tagAtAddress.TagSpecific["HighLimit"];
+                        double appendCriterion = (Math.Abs(lowLimit) + Math.Abs(highLimit)) / 2;
+                        double value = ContextClass.InputTagsValueHistory[time][addr];
+                        if (value <= appendCriterion + 5 && value >= appendCriterion - 5)
+                            writer.WriteLine($"{time} : {addr} <= {value}");
+                    }
+
+                }
+            }
         }
         // Osvježavanje DataGrid-a
+        private void RefreshInputsGrid()
+        {
+            InputTagsGrid.ItemsSource = null;
+            InputTagsGrid.ItemsSource = ContextClass.InputTags;
+        }
+        private void RefreshOutputsGrid()
+        {
+            OutputTagsGrid.ItemsSource = null;
+            OutputTagsGrid.ItemsSource = ContextClass.OutputTags;
+
+        }
         private void RefreshTagsGrid()
         {
-            TagsGrid.ItemsSource = null;
-            TagsGrid.ItemsSource =ContextClass.Tags;
+
+            RefreshInputsGrid();
+            RefreshOutputsGrid();
             //TagsGrid.Items.Refresh();
 
             List<Tag> AITags = ContextClass.Tags.Where(t => t.type == TagType.AI).ToList();
@@ -301,7 +383,6 @@ namespace ScadaGUI
         private void RefreshGrid()
         {
 
-            //Treba prosirit
             RefreshTagsGrid();
             RefreshAlarmsGrid();
         }
@@ -327,7 +408,7 @@ namespace ScadaGUI
                 AlarmDirection dir = dirItem.Content.ToString().Equals("Greater or Equal") ? AlarmDirection.HIGH : AlarmDirection.LOW;
                 string message = AlarmMessageBox.Text;
 
-                int id = ContextClass.Alarms.Count > 0 ? ContextClass.Alarms.Max(a => a.Id) + 1 : 1;
+                int id = ContextClass.Alarms.Count;
 
                 Alarm alarm = new Alarm(id, selectedTag.id, limit, dir, message);
                 ContextClass.AddAlarm(alarm);

@@ -1,26 +1,37 @@
 ﻿using PLCSimulator;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Messaging;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 
 namespace DataConcentrator
 {
 
-    public enum TagType { DI, DO, AI, AO}
-    public class Tag
+    public enum TagType { DI, DO, AI, AO} 
+    public class Tag : INotifyPropertyChanged
     {
         public int id { get; set; }
         public string name { get; set; }
         public TagType type { get; set; }
         public string Description { get; set; }
         public string IOAddress { get; set; }
-        public double value { get; set; }
+        
+        private double _value { get; set; }
+        public double currValue 
+        {
+            get => _value;
+            set
+            {
+                if (TagSpecific != null && TagSpecific.TryGetValue("Scan", out var isScan) && isScan is bool scan && !scan) return;
+                if (_value != value)
+                {
+                    _value = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
         public double prevValue { get; set; }
         public bool isInput { get; set; } = true;
         // Tag specific.
@@ -38,7 +49,7 @@ namespace DataConcentrator
             this.type = type;
             this.Description = description;
             this.IOAddress = iOAddress;
-            this.value = PLCSimulatorManager.addressValues[this.IOAddress];
+            this.currValue = PLCSimulatorManager.addressValues[this.IOAddress];
 
             this.TagSpecific = new Dictionary<string, object>();
             this.TagSpecific["ScanTime"] = ScanTime;
@@ -52,20 +63,20 @@ namespace DataConcentrator
             this.type = type;
             this.Description = description;
             this.IOAddress = iOAddress;
-            this.value = InitValue;
+            this.currValue = InitValue;
             this.isInput = false;
 
             this.TagSpecific = new Dictionary<string, object>();
             //this.TagSpecific["InitValue"] = InitValue;
         }
-        public Tag(int id, string name, TagType type, string description, string iOAddress, float LowLimit, float HighLimit, string Units, float InitValue)
+        public Tag(int id, string name, TagType type, string description, string iOAddress, double LowLimit, double HighLimit, string Units, float InitValue)
         {
             this.id = id;
             this.name = name;
             this.type = type;
             this.Description = description;
             this.IOAddress = iOAddress;
-            this.value = InitValue;
+            this.currValue = InitValue;
             this.isInput = false;
 
             this.TagSpecific = new Dictionary<string, object>();
@@ -74,7 +85,7 @@ namespace DataConcentrator
             this.TagSpecific["Units"] = Units;
             //this.TagSpecific["InitValue"] = InitValue;
         }
-        public Tag(int id, string name, TagType type, string description, string iOAddress, float LowLimit, float HighLimit, string Units,
+        public Tag(int id, string name, TagType type, string description, string iOAddress, double LowLimit, double HighLimit, string Units,
     List<Alarm> Alarms, int ScanTime, Boolean Scan)
         {
             this.id = id;
@@ -82,7 +93,7 @@ namespace DataConcentrator
             this.type = type;
             this.Description = description;
             this.IOAddress = iOAddress;
-            this.value = PLCSimulatorManager.addressValues[this.IOAddress];
+            this.currValue = PLCSimulatorManager.addressValues[this.IOAddress];
 
             this.TagSpecific = new Dictionary<string, object>();
             this.TagSpecific["LowLimit"] = LowLimit;
@@ -91,6 +102,12 @@ namespace DataConcentrator
             this.TagSpecific["Alarms"] = Alarms;
             this.TagSpecific["ScanTime"] = ScanTime;
             this.TagSpecific["Scan"] = Scan;
+        }
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
         public Boolean IsTagValid() // Should ideally move this to ctxClass
         {

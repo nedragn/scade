@@ -30,7 +30,7 @@ namespace DataConcentrator
             TagId = tagId;
             LimitValue = limitValue;
             Direction = direction;
-            DirectionDisplay = direction == AlarmDirection.HIGH ? " Greater or Equal " : "Lower or Equal"; 
+            DirectionDisplay = direction == AlarmDirection.HIGH ? "Greater or Equal" : "Lower or Equal"; 
             Message = message;
         }
 

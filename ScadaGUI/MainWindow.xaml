@@ -11,19 +11,25 @@
     </Grid>
 </Window>
 -->
-    
+
 <Window x:Class="ScadaGUI.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dc="clr-namespace:DataConcentrator;assembly=DataConcentrator" 
         Title="SCADA GUI" Height="650" Width="1000">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
 
         <!-- Forma za unos taga -->
-        <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0 0 0 10">
+        <StackPanel Grid.Row="0" Grid.Column ="0" Grid.ColumnSpan="2" Orientation="Vertical" Margin="0 0 0 10">
 
             <!-- Tip taga -->
             <StackPanel Orientation="Horizontal" Margin="0 5">
@@ -101,15 +107,58 @@
                     <Button x:Name="RemoveAlarmBtn" Content="Remove Alarm" Width="100" Margin="5" Click="RemoveAlarmBtn_Click"/>
                 </StackPanel>
                 <TextBlock Text="Added Alarms" FontWeight="Bold" Margin="0 5"/>
-                <DataGrid x:Name="AlarmsGrid" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Extended" Height="100"/>
-                <TextBlock Text="Activated Alarms" FontWeight="Bold" Margin="0 5"/>
-                <DataGrid x:Name="ActivatedAlarmsGrid" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Extended" Height="100"/>
+                <DataGrid x:Name="AlarmsGrid" Grid.Row ="1" AutoGenerateColumns="False" IsReadOnly="False" SelectionMode="Extended" Height="100" CellEditEnding="CellEditEndingEventHandler">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Id" Binding="{Binding Id}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Tag Id" Binding="{Binding TagId}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Limit Value" Binding="{Binding LimitValue}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Direction" Binding="{Binding DirectionDisplay}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Message" Binding="{Binding Message}" IsReadOnly="True"/>
+                        <DataGridCheckBoxColumn Header="Activated" Binding="{Binding isActivated, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <TextBlock Text="Activated Alarms History" FontWeight="Bold" Margin="0 5"/>
+                <DataGrid x:Name="ActivatedAlarmsGrid" Grid.Row ="1" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Extended" Height="100" LoadingRow="ActivatedAlarmLoadingRowsEventHandler">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Activated at" Binding="{Binding Time}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Alarm Id" Binding="{Binding AlarmId}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Tag" Binding="{Binding TagName}" IsReadOnly="True"/>
+                    </DataGrid.Columns>
+                </DataGrid>
             </StackPanel>
         </StackPanel>
 
         <!-- DataGrid za prikaz tagova -->
-
-        <DataGrid x:Name="TagsGrid" Grid.Row="1" AutoGenerateColumns="True" IsReadOnly="True" SelectionMode="Extended" Margin="0,20,0,0"/>
+        <DataGrid x:Name="InputTagsGrid" Grid.Row="1" Grid.Column="0" AutoGenerateColumns="False" IsReadOnly="False" SelectionMode="Extended"
+                  LoadingRow="TagLoadingRowsEventHandler" Grid.ColumnSpan="2" Margin="0,0,437,0" CellEditEnding="CellEditEndingEventHandler">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Id" Binding="{Binding id}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Name" Binding="{Binding name}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Description" Binding="{Binding Description}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Type" Binding="{Binding type}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Address" Binding="{Binding IOAddress}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Value" Binding="{Binding currValue, StringFormat=\{0:N2\}}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Lower Limit" Binding="{Binding TagSpecific[LowLimit], FallbackValue='-'}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Upper Limit" Binding="{Binding TagSpecific[HighLimit], FallbackValue='-'}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Units" Binding="{Binding TagSpecific[Units], FallbackValue='-'}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Scan Time" Binding="{Binding TagSpecific[ScanTime], FallbackValue='-'}" IsReadOnly="True"/>
+                <DataGridCheckBoxColumn Header="Scan" Binding="{Binding TagSpecific[Scan], FallbackValue='False', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
+            </DataGrid.Columns>
+        </DataGrid>
+        <DataGrid x:Name="OutputTagsGrid" Grid.Row="1" Grid.Column="1"  AutoGenerateColumns="False" IsReadOnly="False" SelectionMode="Extended" CellEditEnding="CellEditEndingEventHandler" 
+          BeginningEdit="BeginningEditEventHandler" LoadingRow="TagLoadingRowsEventHandler" HorizontalAlignment="Left" Width="437" Margin="53,0,0,0">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Id" Binding="{Binding id}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Name" Binding="{Binding name}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Description" Binding="{Binding Description}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Type" Binding="{Binding type}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Address" Binding="{Binding IOAddress}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Value" Binding="{Binding currValue, StringFormat=\{0:N2\}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False"/>
+                <DataGridTextColumn Header="Lower Limit" Binding="{Binding TagSpecific[LowLimit], FallbackValue='-'}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Upper Limit" Binding="{Binding TagSpecific[HighLimit], FallbackValue='-'}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Units" Binding="{Binding TagSpecific[Units], FallbackValue='-'}" IsReadOnly="True"/>
+            </DataGrid.Columns>
+        </DataGrid>
     </Grid>
 </Window>
 
