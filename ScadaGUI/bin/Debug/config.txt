@@ -1,0 +1,4 @@
+Tag: 0,Test tag 1,AI, ,ADDR001,95.1056516295154,-50,50,A,/,1000,True,
+Tag: 1,Test tag 2,AI, ,ADDR002,40,-10,10,V,/,1000,True,
+Tag: 2,Test tag 3,DO, ,ADDR005,1,/,/,/,/,/,/,
+Tag: 3,Test tag 4,AO, ,ADDR006,2.70000004768372,-10,10,V,/,/,/,

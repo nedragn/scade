@@ -1,52 +1,23 @@
-﻿/*using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-
-
-namespace ScadaGUI
-{
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    public partial class MainWindow : Window
-    {
-        public MainWindow()
-        {
-            InitializeComponent();
-        }
-    }
-}*/
-
-using DataConcentrator;
+﻿using DataConcentrator;
+using Microsoft.Win32;
 using PLCSimulator;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.Remoting.Contexts;
 using System.Runtime.Remoting.Metadata.W3cXsd2001;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
-using System.Xml.Linq;
-using System.Threading;
-using System.Diagnostics.Tracing;
 using System.Windows.Input;
-using System.Runtime.Remoting.Contexts;
 using System.Windows.Media;
-using System.IO;
+using System.Xml.Linq;
 
 namespace ScadaGUI
 {
@@ -114,8 +85,8 @@ namespace ScadaGUI
                         return;
                     }
                     else if (editedTag.type == TagType.AO &&
-                        ((float)editedTag.currValue <= (float)editedTag.TagSpecific["LowLimit"] ||
-                         (float)editedTag.currValue >= (float)editedTag.TagSpecific["HighLimit"]))
+                        ((double)editedTag.currValue <= (double)editedTag.TagSpecific["LowLimit"] ||
+                         (double)editedTag.currValue >= (double)editedTag.TagSpecific["HighLimit"]))
                     {
                         MessageBox.Show("Value out of bounds. What did you set the limits for? ");
                         ContextClass.Tags[editedTag.id].currValue = editedTag.prevValue;
@@ -347,6 +318,104 @@ namespace ScadaGUI
 
                 }
             }
+        }
+        private void SaveConfigurationEventHandler(object sender, RoutedEventArgs e)
+        {
+            ContextClass.SaveConfiguration("config.txt");
+            MessageBox.Show("Uspesno sacuvano!");
+
+        }
+        private void LoadConfigurationEventHandler(object sender, RoutedEventArgs e)
+        {
+            var dlg = new OpenFileDialog();
+            dlg.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
+
+            if (dlg.ShowDialog() == true)
+            {
+                string[] textFileContent = File.ReadAllLines(dlg.FileName);
+                //Console.WriteLine(textFileContent[0]);
+                List<Tag> tagsToLoad = new List<Tag>();
+                List<Alarm> alarmsToLoad = new List<Alarm>();
+                List<ActivatedAlarm> activatedAlarmsToLoad = new List<ActivatedAlarm>();
+                foreach(string fieldContent in textFileContent)
+                {
+                    if (fieldContent.Contains("Alarm: ") && !fieldContent.Contains("ActivatedAlarm: "))
+                    {
+                        string field = fieldContent.Replace("Alarm: ", "");
+                        string[] tagFields = field.Split(',');
+                        Console.WriteLine($"--> { field}");
+                        int id = int.Parse(tagFields[0]);
+                        int tagId = int.Parse(tagFields[1]);
+                        double limitValue = double.Parse(tagFields[2]);
+                        AlarmDirection direction = (AlarmDirection)AlarmDirection.Parse(typeof(AlarmDirection), tagFields[3]);
+                        string Message = tagFields[4];
+                        bool isActivated = bool.Parse(tagFields[5]);
+                        alarmsToLoad.Add(new Alarm(id, tagId, limitValue, direction, Message, isActivated));
+
+                    }
+                    if (fieldContent.Contains("Tag: "))
+                    {
+                        string field = fieldContent.Replace("Tag: ", "");
+                        field = field.Replace("/,", "");
+                        Console.WriteLine(field);
+                        string[] tagFields = field.Split(',');
+                        //tagFields.ToList().ForEach(l => Console.WriteLine(l));
+
+                        int id = int.Parse(tagFields[0]);
+                        string name = tagFields[1];
+                        TagType type = (TagType)TagType.Parse(typeof(TagType), tagFields[2]);
+                        string Description = tagFields[3];
+                        string IOAddress = tagFields[4];
+                        double currValue = double.Parse(tagFields[5]);
+
+
+                        if (type == TagType.DI) 
+                        {
+                            int ScanTime = int.Parse(tagFields[5]);
+                            bool Scan = bool.Parse(tagFields[6]);
+                            tagsToLoad.Add(new DataConcentrator.Tag(id, name, type, Description, IOAddress, ScanTime, Scan));
+                        }
+                        if (type == TagType.DO)
+                        {
+                            tagsToLoad.Add(new DataConcentrator.Tag(id, name, type, Description, IOAddress, currValue));
+                        }
+                        if (type == TagType.AI)
+                        {
+                            double LowLimit = double.Parse(tagFields[6]);
+                            double HighLimit = double.Parse(tagFields[7]);
+                            string Units = tagFields[8];
+                            List<Alarm> Alarms = new List<Alarm>();
+                            if (alarmsToLoad.Where(a => a.TagId == id).DefaultIfEmpty() != null)
+                                Alarms = alarmsToLoad.Where(a => a.TagId == id).ToList();
+                            int ScanTime = int.Parse(tagFields[9]);
+                            bool Scan = bool.Parse(tagFields[10]);
+                            tagsToLoad.Add(new DataConcentrator.Tag(id, name, type, Description, IOAddress, LowLimit, HighLimit, Units, Alarms, ScanTime, Scan));
+                        }
+                        if (type == TagType.AO)
+                        {
+                            double LowLimit = double.Parse(tagFields[6]);
+                            double HighLimit = double.Parse(tagFields[7]);
+                            string Units = tagFields[8];
+                            tagsToLoad.Add(new DataConcentrator.Tag(id, name, type, Description, IOAddress,  LowLimit, HighLimit, Units, currValue));
+                        }
+                    }
+                    if(fieldContent.Contains("ActivatedAlarm: "))
+                    {
+                        string field = fieldContent.Replace("ActivatedAlarm: ", "");
+                        string[] tagFields = field.Split(',');
+                        Console.WriteLine(field);
+                        int AlarmId = int.Parse(tagFields[0]);
+                        string TagName = tagFields[1];
+                        string Message = tagFields[2];
+                        DateTime Time = DateTime.Parse(tagFields[3]);
+                        activatedAlarmsToLoad.Add(new ActivatedAlarm(AlarmId, TagName, Message, Time));
+                    }
+                }
+                ContextClass.LoadConfiguration(tagsToLoad, alarmsToLoad, activatedAlarmsToLoad);
+                ContextClass.UpdateInputOutputTags();
+                RefreshGrid();
+            }
+
         }
         // Osvježavanje DataGrid-a
         private void RefreshInputsGrid()

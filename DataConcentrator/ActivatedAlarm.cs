@@ -21,5 +21,17 @@ namespace DataConcentrator
             Message = message;
             Time = DateTime.Now; 
         }
+        public ActivatedAlarm(int alarmId, string tagName, string message, DateTime time)
+        {
+            AlarmId = alarmId;
+            TagName = tagName;
+            Message = message;
+            Time = time;
+        }
+        public override string ToString()
+        {
+            string printString = $"{AlarmId},{TagName},{Message},{Time},";
+            return printString;
+        }
     }
 }

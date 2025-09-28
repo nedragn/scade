@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 
@@ -56,7 +57,7 @@ namespace DataConcentrator
             this.TagSpecific["Scan"] = Scan;
         }
         //DO
-        public Tag(int id, string name, TagType type, string description, string iOAddress, float InitValue)
+        public Tag(int id, string name, TagType type, string description, string iOAddress, double InitValue)
         {
             this.id = id;
             this.name = name;
@@ -69,7 +70,7 @@ namespace DataConcentrator
             this.TagSpecific = new Dictionary<string, object>();
             //this.TagSpecific["InitValue"] = InitValue;
         }
-        public Tag(int id, string name, TagType type, string description, string iOAddress, double LowLimit, double HighLimit, string Units, float InitValue)
+        public Tag(int id, string name, TagType type, string description, string iOAddress, double LowLimit, double HighLimit, string Units, double InitValue)
         {
             this.id = id;
             this.name = name;
@@ -156,7 +157,21 @@ namespace DataConcentrator
 
 
         }
-
+        public override string ToString()
+        {
+            string printString = $"{id},{name},{type},{Description},{IOAddress},{currValue},";
+            List<string> unionTagSpecificKeys = TagSpecificKeysAI.Union(TagSpecificKeysAO).ToList();
+            unionTagSpecificKeys = unionTagSpecificKeys.Union(TagSpecificKeysDI).ToList();
+            unionTagSpecificKeys = unionTagSpecificKeys.Union(TagSpecificKeysDO).ToList();
+            foreach (string key in unionTagSpecificKeys) 
+            {
+                if (TagSpecific.ContainsKey(key) && key != "Alarms")
+                    printString += $"{TagSpecific[key]},";
+                else printString += "/,";
+            }
+            //Console.WriteLine(printString);
+            return printString;
+        }
 
 
     }

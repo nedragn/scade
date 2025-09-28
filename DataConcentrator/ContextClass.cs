@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -21,7 +22,8 @@ namespace DataConcentrator
         public static List<Tag> InputTags = new List<Tag>();
         public static List<Tag> OutputTags = new List<Tag>();
         public static readonly List<Alarm> Alarms = new List<Alarm>();            // svi alarmi
-        public static readonly List<ActivatedAlarm> ActivatedAlarms = new List<ActivatedAlarm>(); // aktivirani alarmi (koji su se desili)
+        public static readonly List<ActivatedAlarm> ActivatedAlarms = new List<ActivatedAlarm>();
+        
 
         // --- Threading / skeneri ---
         private static readonly Dictionary<int, Thread> activeScannerThreads = new Dictionary<int, Thread>(); // za svaki tag id čuvamo thread koji ga skenira
@@ -154,10 +156,45 @@ namespace DataConcentrator
                 t.Start(); // pokreni skener
             }
         }
+        public static void LoadConfiguration(List<Tag> tagsToLoad, List<Alarm> alarmsToLoad, List<ActivatedAlarm> activatedAlarmsToLoad)
+        {
+            lock(stateLock){ 
+            for (int i = 0; i < Tags.Count(); i++)
+                RemoveTag(Tags[i].id);
+            for (int i = 0; i < Alarms.Count(); i++)
+                RemoveAlarm(Alarms[i].Id);
+            UpdateInputOutputTags();
+        }
+                
+                foreach (Tag tagToLoad in tagsToLoad)
+                {
+                //Console.WriteLine(tagToLoad.ToString());
+                    AddTag(tagToLoad);
+                }
 
-        /// <summary>
-        /// Zaustavlja jedan skener (po tag id).
-        /// </summary>
+                foreach (Alarm alarmToLoad in alarmsToLoad)
+                {
+                    AddAlarm(alarmToLoad);
+                }
+
+
+                foreach (ActivatedAlarm activatedAlarmToLoad in activatedAlarmsToLoad)
+                {
+                    ActivatedAlarms.Add(activatedAlarmToLoad);
+                }
+                UpdateInputOutputTags();
+        }
+        public static void SaveConfiguration(string path)
+        {
+
+                using (var writer = new StreamWriter(path, append:false))
+                {
+                Alarms.ForEach(t => writer.WriteLine("Alarm: " + t.ToString()));
+                Tags.ForEach(t => writer.WriteLine("Tag: " + t.ToString()));
+                    ActivatedAlarms.ForEach(t => writer.WriteLine("ActivatedAlarm: " + t.ToString()));
+
+                }     
+        }
         public static void TerminateScanner(int tagId)
         {
             lock (stateLock)

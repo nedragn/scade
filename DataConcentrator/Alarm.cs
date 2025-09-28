@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -33,10 +34,25 @@ namespace DataConcentrator
             DirectionDisplay = direction == AlarmDirection.HIGH ? "Greater or Equal" : "Lower or Equal"; 
             Message = message;
         }
+        public Alarm(int id, int tagId, double limitValue, AlarmDirection direction, string message, bool isActivated)
+        {
+            Id = id;
+            TagId = tagId;
+            LimitValue = limitValue;
+            Direction = direction;
+            DirectionDisplay = direction == AlarmDirection.HIGH ? "Greater or Equal" : "Lower or Equal";
+            Message = message;
+            this.isActivated = isActivated;
+        }
 
         public Boolean checkAlarm(double value)
         {
             return this.Direction == AlarmDirection.HIGH ? value >= this.LimitValue : value <= this.LimitValue;  
+        }
+        public override string ToString()
+        {
+            string printString = $"{Id},{TagId},{LimitValue},{Direction},{Message},{isActivated},";
+            return printString;
         }
     }
 }
