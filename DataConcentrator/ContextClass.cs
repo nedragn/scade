@@ -43,7 +43,7 @@ namespace DataConcentrator
         /// </summary>
         public static void ConnectAndStartSimulator()
         {
-            lock (plcSimLock) // zaključavamo jer možda više thread-ova zove ovu metodu
+            lock (plcSimLock) 
             {
                 if (plcSim == null) // ako simulator nije pokrenut
                 {
