@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Text;
+using System.Xml;
 using System.Threading;
-using System.Threading.Tasks;
 using PLCSimulator;
+using System.Xml.Linq;
+using System.IO;
+using System.Xml.XPath;
+using System.Security.Cryptography;
 
 namespace DataConcentrator
 {
@@ -63,7 +65,7 @@ namespace DataConcentrator
 
             lock (stateLock)
             {
-                if (!Tags.Any(t => t.id == tag.id) && !Tags.Any(t => t.name == tag.name)) // dodaj samo ako ne postoji već tag sa istim id
+                if (!Tags.Any(t => t.name == tag.name)) // dodaj samo ako ne postoji već tag sa istim id
                 {
 
                     Tags.Add(tag);
@@ -156,44 +158,195 @@ namespace DataConcentrator
                 t.Start(); // pokreni skener
             }
         }
-        public static void LoadConfiguration(List<Tag> tagsToLoad, List<Alarm> alarmsToLoad, List<ActivatedAlarm> activatedAlarmsToLoad)
+        public static void LoadConfiguration(string pathToConfig)
         {
             lock(stateLock){ 
-            for (int i = 0; i < Tags.Count(); i++)
-                RemoveTag(Tags[i].id);
-            for (int i = 0; i < Alarms.Count(); i++)
-                RemoveAlarm(Alarms[i].Id);
-            UpdateInputOutputTags();
-        }
-                
-                foreach (Tag tagToLoad in tagsToLoad)
-                {
-                //Console.WriteLine(tagToLoad.ToString());
-                    AddTag(tagToLoad);
-                }
-
-                foreach (Alarm alarmToLoad in alarmsToLoad)
-                {
-                    AddAlarm(alarmToLoad);
-                }
-
-
-                foreach (ActivatedAlarm activatedAlarmToLoad in activatedAlarmsToLoad)
-                {
-                    ActivatedAlarms.Add(activatedAlarmToLoad);
-                }
+                for (int i = 0; i < Tags.Count(); i++)
+                    RemoveTag(Tags[i].id);
+                for (int i = 0; i < Alarms.Count(); i++)
+                    RemoveAlarm(Alarms[i].Id);
                 UpdateInputOutputTags();
+            
+                XElement config = XElement.Load(pathToConfig);
+                List<Alarm> newAlarms = new List<Alarm>();
+                foreach (XElement alarm in config.Descendants("AlarmItem"))
+                {
+                    Alarm newAlarm = new Alarm(
+                        int.Parse(alarm.Value),
+                        int.Parse(alarm.Attribute("TagId").Value),
+                        double.Parse(alarm.Attribute("LimitValue").Value),
+                        (AlarmDirection)AlarmDirection.Parse(typeof(AlarmDirection), alarm.Attribute("Direction").Value),
+                        alarm.Attribute("Message").Value,
+                        bool.Parse(alarm.Attribute("IsActivated").Value)
+                        );
+                    newAlarms.Add(newAlarm);
+                    Alarms.Add(newAlarm);
+                    //AddAlarm(newAlarm);
+
+                }
+                //config.Descendants("Tag").ToList().ForEach(a => Console.WriteLine(a));
+                foreach (XElement tag in config.Descendants("TagItem"))
+                {
+                    Console.WriteLine($"{tag.ToString()}");
+                    if((TagType)TagType.Parse(typeof(TagType), tag.Attribute("Type").Value) == TagType.DI)
+                    AddTag(new Tag (
+                        int.Parse(tag.Value),
+                        tag.Attribute("Name").Value,
+                        (TagType)TagType.Parse(typeof(TagType), tag.Attribute("Type").Value),
+                        tag.Attribute("Description").Value,
+                        tag.Attribute("IOAddress").Value,
+                        int.Parse(tag.Attribute("ScanTime").Value),
+                        bool.Parse(tag.Attribute("Scan").Value)
+                    ));
+                    else if ((TagType)TagType.Parse(typeof(TagType), tag.Attribute("Type").Value) == TagType.DO)
+                        AddTag(new Tag(
+                            int.Parse(tag.Value),
+                            tag.Attribute("Name").Value,
+                            (TagType)TagType.Parse(typeof(TagType), tag.Attribute("Type").Value),
+                            tag.Attribute("Description").Value,
+                            tag.Attribute("IOAddress").Value,
+                            double.Parse(tag.Attribute("Value").Value)
+                        ));
+                    else if ((TagType)TagType.Parse(typeof(TagType), tag.Attribute("Type").Value) == TagType.AO)
+                        AddTag(new Tag(
+                            int.Parse(tag.Value),
+                            tag.Attribute("Name").Value,
+                            (TagType)TagType.Parse(typeof(TagType), tag.Attribute("Type").Value),
+                            tag.Attribute("Description").Value,
+                            tag.Attribute("IOAddress").Value,
+                            double.Parse(tag.Attribute("LowLimit").Value),
+                            double.Parse(tag.Attribute("HighLimit").Value),
+                            tag.Attribute("Units").Value,
+                            double.Parse(tag.Attribute("Value").Value)
+                        ));
+                    else if ((TagType)TagType.Parse(typeof(TagType), tag.Attribute("Type").Value) == TagType.AO)
+                        AddTag(new Tag(
+                            int.Parse(tag.Value),
+                            tag.Attribute("Name").Value,
+                            (TagType)TagType.Parse(typeof(TagType), tag.Attribute("Type").Value),
+                            tag.Attribute("Description").Value,
+                            tag.Attribute("IOAddress").Value,
+                            double.Parse(tag.Attribute("LowLimit").Value),
+                            double.Parse(tag.Attribute("HighLimit").Value),
+                            tag.Attribute("Units").Value,
+                            newAlarms,
+                            int.Parse(tag.Attribute("ScanTime").Value),
+                            bool.Parse(tag.Attribute("Scan").Value)
+                        ));
+                }
+                foreach( XElement activatedAlarm in config.Descendants("ActivatedAlarmItem"))
+                {
+                    ActivatedAlarms.Add(new ActivatedAlarm
+                    (
+                        int.Parse(activatedAlarm.Value),
+                        activatedAlarm.Attribute("TagName").Value,
+                        activatedAlarm.Attribute("Message").Value,
+                        DateTime.Parse(activatedAlarm.Attribute("Time").Value)
+                    ));
+                }
+            }
+
         }
         public static void SaveConfiguration(string path)
         {
+            XElement tags = new XElement("Tag");
+            foreach(Tag tag in Tags)
+            {
+                object lowLimit = null;
+                tag.TagSpecific.TryGetValue("LowLimit", out lowLimit);
+                object highLimit = null;
+                tag.TagSpecific.TryGetValue("HighLimit", out highLimit);
+                object ScanTime = null;
+                tag.TagSpecific.TryGetValue("ScanTime", out ScanTime);
+                object Scan = null;
+                tag.TagSpecific.TryGetValue("Scan", out Scan);
+                object Units = null;
+                tag.TagSpecific.TryGetValue("Units", out Units);
 
-                using (var writer = new StreamWriter(path, append:false))
+                if(tag.type == TagType.DI)
                 {
-                Alarms.ForEach(t => writer.WriteLine("Alarm: " + t.ToString()));
-                Tags.ForEach(t => writer.WriteLine("Tag: " + t.ToString()));
-                    ActivatedAlarms.ForEach(t => writer.WriteLine("ActivatedAlarm: " + t.ToString()));
+                    tags.Add(new XElement(
+                    "TagItem", tag.id,
+                    new XAttribute("Name", tag.name),
+                    new XAttribute("Type", tag.type),
+                    new XAttribute("IOAddress", tag.IOAddress),
+                    new XAttribute("Value", tag.currValue),
+                    new XAttribute("Description", tag.Description),
+                    new XAttribute("ScanTime", ScanTime),
+                    new XAttribute("Scan", Scan)
+                    ));
+                }
+                else if(tag.type == TagType.DO)
+                {
+                    tags.Add(new XElement(
+                    "TagItem", tag.id,
+                    new XAttribute("Name", tag.name),
+                    new XAttribute("Type", tag.type),
+                    new XAttribute("IOAddress", tag.IOAddress),
+                    new XAttribute("Value", tag.currValue),
+                    new XAttribute("Description", tag.Description)
+                    ));
+                }
+                else if(tag.type == TagType.AI)
+                {
+                    tags.Add(new XElement(
+                    "TagItem", tag.id,
+                    new XAttribute("Name", tag.name),
+                    new XAttribute("Type", tag.type),
+                    new XAttribute("IOAddress", tag.IOAddress),
+                    new XAttribute("Value", tag.currValue),
+                    new XAttribute("Description", tag.Description),
+                    new XAttribute("LowLimit", lowLimit),
+                    new XAttribute("HighLimit", highLimit),
+                    new XAttribute("ScanTime", ScanTime),
+                    new XAttribute("Scan", Scan),
+                    new XAttribute("Units", Units)
+                    ));
+                }
+                else if (tag.type == TagType.AO)
+                {
+                    tags.Add(new XElement(
+                    "TagItem", tag.id,
+                    new XAttribute("Name", tag.name),
+                    new XAttribute("Type", tag.type),
+                    new XAttribute("IOAddress", tag.IOAddress),
+                    new XAttribute("Value", tag.currValue),
+                    new XAttribute("Description", tag.Description),
+                    new XAttribute("LowLimit", lowLimit),
+                    new XAttribute("HighLimit", highLimit),
+                    new XAttribute("Units", Units)
+                    ));
+                }
 
-                }     
+            }
+            XElement alarms = new XElement("Alarm");
+            foreach(Alarm alarm in Alarms)
+            {
+                alarms.Add(new XElement(
+                "AlarmItem", alarm.Id,
+                new XAttribute("TagId", alarm.TagId),
+                new XAttribute("LimitValue", alarm.LimitValue),
+                new XAttribute("Message", alarm.Message),
+                new XAttribute("IsActivated", alarm.isActivated),
+                new XAttribute("Direction", alarm.Direction)
+                ));
+            }
+            XElement activatedAlarms = new XElement("ActivatedAlarm");
+            foreach(ActivatedAlarm activatedAlarm in ActivatedAlarms)
+            {
+                activatedAlarms.Add(new XElement(
+                    "ActivatedAlarmItem", activatedAlarm.AlarmId,
+                    new XAttribute("Time", activatedAlarm.Time),
+                    new XAttribute("Message", activatedAlarm.Message),
+                    new XAttribute("TagName", activatedAlarm.TagName)
+                    ));
+            }
+
+            XElement saveFileElement = new XElement("Config");
+            saveFileElement.Add(tags);
+            saveFileElement.Add(alarms);
+            saveFileElement.Add(activatedAlarms);
+            saveFileElement.Save(path);
         }
         public static void TerminateScanner(int tagId)
         {

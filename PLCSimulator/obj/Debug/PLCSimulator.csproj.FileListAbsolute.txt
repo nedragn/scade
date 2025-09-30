@@ -4,3 +4,9 @@ C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\PLCSimulator\obj\Debug\PLCSimulator.
 C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\PLCSimulator\obj\Debug\PLCSimulator.csproj.CoreCompileInputs.cache
 C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\PLCSimulator\obj\Debug\PLCSimulator.dll
 C:\Users\milic\Desktop\PSUSU\PROJEKAT\scade\PLCSimulator\obj\Debug\PLCSimulator.pdb
+C:\Users\Nuzdic\Documents\GitHub\scade_copy\scade\PLCSimulator\bin\Debug\PLCSimulator.dll
+C:\Users\Nuzdic\Documents\GitHub\scade_copy\scade\PLCSimulator\bin\Debug\PLCSimulator.pdb
+C:\Users\Nuzdic\Documents\GitHub\scade_copy\scade\PLCSimulator\obj\Debug\PLCSimulator.csproj.AssemblyReference.cache
+C:\Users\Nuzdic\Documents\GitHub\scade_copy\scade\PLCSimulator\obj\Debug\PLCSimulator.csproj.CoreCompileInputs.cache
+C:\Users\Nuzdic\Documents\GitHub\scade_copy\scade\PLCSimulator\obj\Debug\PLCSimulator.dll
+C:\Users\Nuzdic\Documents\GitHub\scade_copy\scade\PLCSimulator\obj\Debug\PLCSimulator.pdb

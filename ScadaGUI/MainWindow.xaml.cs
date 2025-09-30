@@ -3,21 +3,11 @@ using Microsoft.Win32;
 using PLCSimulator;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Runtime.Remoting.Contexts;
-using System.Runtime.Remoting.Metadata.W3cXsd2001;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Xml.Linq;
 
 namespace ScadaGUI
 {
@@ -321,15 +311,15 @@ namespace ScadaGUI
         }
         private void SaveConfigurationEventHandler(object sender, RoutedEventArgs e)
         {
-            ContextClass.SaveConfiguration("config.txt");
+            ContextClass.SaveConfiguration("config.xml");
             MessageBox.Show("Uspesno sacuvano!");
 
         }
         private void LoadConfigurationEventHandler(object sender, RoutedEventArgs e)
         {
             var dlg = new OpenFileDialog();
-            dlg.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
-
+            dlg.Filter = "XML File (*.xml)|*.xml|All files (*.*)|*.*";
+            /*
             if (dlg.ShowDialog() == true)
             {
                 string[] textFileContent = File.ReadAllLines(dlg.FileName);
@@ -415,7 +405,11 @@ namespace ScadaGUI
                 ContextClass.UpdateInputOutputTags();
                 RefreshGrid();
             }
+            */
+            if (dlg.ShowDialog() == true)
+            ContextClass.LoadConfiguration(dlg.FileName);
 
+            RefreshGrid();
         }
         // Osvježavanje DataGrid-a
         private void RefreshInputsGrid()

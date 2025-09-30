@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Config>
+  <Tag>
+    <TagItem Name="Test tag 1" Type="AI" IOAddress="ADDR001" Value="30.901699437494752" Description=" " LowLimit="-50" HighLimit="50" ScanTime="1000" Scan="true" Units="A">0</TagItem>
+    <TagItem Name="Test tag 2" Type="AI" IOAddress="ADDR002" Value="91" Description=" " LowLimit="-10" HighLimit="10" ScanTime="1000" Scan="true" Units="V">1</TagItem>
+    <TagItem Name="Test tag 3" Type="DO" IOAddress="ADDR005" Value="1" Description=" ">2</TagItem>
+    <TagItem Name="Test tag 4" Type="AO" IOAddress="ADDR006" Value="2.7000000476837158" Description=" " LowLimit="-10" HighLimit="10" Units="V">3</TagItem>
+  </Tag>
+  <Alarm>
+    <AlarmItem TagId="1" LimitValue="14" Message="aaa" IsActivated="true" Direction="HIGH">0</AlarmItem>
+  </Alarm>
+  <ActivatedAlarm>
+    <ActivatedAlarmItem Time="2025-09-30T18:48:51.8769509+02:00" Message="aaa" TagName="Test tag 2">0</ActivatedAlarmItem>
+  </ActivatedAlarm>
+</Config>
