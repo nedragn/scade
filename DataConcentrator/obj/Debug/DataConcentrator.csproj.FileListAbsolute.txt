@@ -16,3 +16,12 @@ C:\Users\Nuzdic\Documents\GitHub\scade_copy\scade\DataConcentrator\bin\Debug\Dat
 C:\Users\Nuzdic\Documents\GitHub\scade_copy\scade\DataConcentrator\bin\Debug\PLCSimulator.dll
 C:\Users\Nuzdic\Documents\GitHub\scade_copy\scade\DataConcentrator\bin\Debug\PLCSimulator.pdb
 C:\Users\Nuzdic\Documents\GitHub\scade_copy\scade\DataConcentrator\obj\Debug\DataConc.AF26BFFF.Up2Date
+C:\Users\Korisnik\Desktop\m\scade\DataConcentrator\bin\Debug\DataConcentrator.dll
+C:\Users\Korisnik\Desktop\m\scade\DataConcentrator\bin\Debug\DataConcentrator.pdb
+C:\Users\Korisnik\Desktop\m\scade\DataConcentrator\bin\Debug\PLCSimulator.dll
+C:\Users\Korisnik\Desktop\m\scade\DataConcentrator\bin\Debug\PLCSimulator.pdb
+C:\Users\Korisnik\Desktop\m\scade\DataConcentrator\obj\Debug\DataConcentrator.csproj.AssemblyReference.cache
+C:\Users\Korisnik\Desktop\m\scade\DataConcentrator\obj\Debug\DataConcentrator.csproj.CoreCompileInputs.cache
+C:\Users\Korisnik\Desktop\m\scade\DataConcentrator\obj\Debug\DataConc.AF26BFFF.Up2Date
+C:\Users\Korisnik\Desktop\m\scade\DataConcentrator\obj\Debug\DataConcentrator.dll
+C:\Users\Korisnik\Desktop\m\scade\DataConcentrator\obj\Debug\DataConcentrator.pdb

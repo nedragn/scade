@@ -1,4 +1,12 @@
-Tag: 0,Test tag 1,AI, ,ADDR001,95.1056516295154,-50,50,A,/,1000,True,
-Tag: 1,Test tag 2,AI, ,ADDR002,40,-10,10,V,/,1000,True,
-Tag: 2,Test tag 3,DO, ,ADDR005,1,/,/,/,/,/,/,
-Tag: 3,Test tag 4,AO, ,ADDR006,2.70000004768372,-10,10,V,/,/,/,
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Config>
+  <Tag>
+    <TagItem Id="0" Name="Test tag 1" Type="AI" Description=" " IOAddress="ADDR001" Value="62.932039104983737" LowLimit="-50" HighLimit="50" Units="A" Alarms="System.Collections.Generic.List`1[DataConcentrator.Alarm]" ScanTime="1000" Scan="true" />
+    <TagItem Id="1" Name="Test tag 2" Type="AI" Description=" " IOAddress="ADDR002" Value="78" LowLimit="-10" HighLimit="10" Units="V" Alarms="System.Collections.Generic.List`1[DataConcentrator.Alarm]" ScanTime="1000" Scan="true" />
+    <TagItem Id="2" Name="Test tag 3" Type="DO" Description=" " IOAddress="ADDR005" Value="1" />
+    <TagItem Id="3" Name="Test tag 4" Type="AO" Description=" " IOAddress="ADDR006" Value="2.7000000476837158" LowLimit="-10" HighLimit="10" Units="V" />
+    <TagItem Id="4" Name="test101" Type="AI" Description="" IOAddress="ADDR004" Value="49.945695977632745" LowLimit="4" HighLimit="20" Units="V" Alarms="System.Collections.Generic.List`1[DataConcentrator.Alarm]" ScanTime="100" Scan="false" />
+  </Tag>
+  <Alarm />
+  <ActivatedAlarm />
+</Config>

@@ -1,15 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Config>
   <Tag>
-    <TagItem Name="Test tag 1" Type="AI" IOAddress="ADDR001" Value="30.901699437494752" Description=" " LowLimit="-50" HighLimit="50" ScanTime="1000" Scan="true" Units="A">0</TagItem>
-    <TagItem Name="Test tag 2" Type="AI" IOAddress="ADDR002" Value="91" Description=" " LowLimit="-10" HighLimit="10" ScanTime="1000" Scan="true" Units="V">1</TagItem>
-    <TagItem Name="Test tag 3" Type="DO" IOAddress="ADDR005" Value="1" Description=" ">2</TagItem>
-    <TagItem Name="Test tag 4" Type="AO" IOAddress="ADDR006" Value="2.7000000476837158" Description=" " LowLimit="-10" HighLimit="10" Units="V">3</TagItem>
+    <TagItem Id="0" Name="Test tag 1" Type="AI" Description=" " IOAddress="ADDR001" Value="66.9130606358858" LowLimit="-50" HighLimit="50" Units="A" Alarms="System.Collections.Generic.List`1[DataConcentrator.Alarm]" ScanTime="1000" Scan="true" />
+    <TagItem Id="0" Name="Test tag 2" Type="AI" Description=" " IOAddress="ADDR002" Value="0" LowLimit="-10" HighLimit="10" Units="V" Alarms="System.Collections.Generic.List`1[DataConcentrator.Alarm]" ScanTime="1000" Scan="true" />
+    <TagItem Id="0" Name="Test tag 3" Type="DO" Description=" " IOAddress="ADDR005" Value="1" />
+    <TagItem Id="0" Name="Test tag 4" Type="AO" Description=" " IOAddress="ADDR006" Value="27000000521175040" LowLimit="-10" HighLimit="10" Units="V" />
+    <TagItem Id="0" Name="test78" Type="DI" Description="" IOAddress="ADDR010" Value="0" ScanTime="50" Scan="true" />
+    <TagItem Id="1" Name="test101" Type="AI" Description="" IOAddress="ADDR004" Value="8.9044790523613226" LowLimit="4" HighLimit="20" Units="V" Alarms="System.Collections.Generic.List`1[DataConcentrator.Alarm]" ScanTime="100" Scan="false" />
   </Tag>
-  <Alarm>
-    <AlarmItem TagId="1" LimitValue="14" Message="aaa" IsActivated="true" Direction="HIGH">0</AlarmItem>
-  </Alarm>
-  <ActivatedAlarm>
-    <ActivatedAlarmItem Time="2025-09-30T18:48:51.8769509+02:00" Message="aaa" TagName="Test tag 2">0</ActivatedAlarmItem>
-  </ActivatedAlarm>
+  <Alarm />
+  <ActivatedAlarm />
 </Config>

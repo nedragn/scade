@@ -14,6 +14,8 @@ namespace DataConcentrator
 {
     public static class ContextClass
     {
+        private static string defaultPath = "config.txt";
+
         // --- Simulator i sinhronizacija ---
         private static PLCSimulatorManager plcSim = null; // čuva instancu PLCSimulator-a
         private static readonly object plcSimLock = new object(); // služi za zaključavanje pristupa simulatoru iz više thread-ova
@@ -158,7 +160,7 @@ namespace DataConcentrator
                 t.Start(); // pokreni skener
             }
         }
-        public static void LoadConfiguration(string pathToConfig)
+        /*public static void LoadConfiguration(string pathToConfig)
         {
             lock(stateLock){ 
                 for (int i = 0; i < Tags.Count(); i++)
@@ -246,108 +248,246 @@ namespace DataConcentrator
                 }
             }
 
-        }
+        }*/
+
+        
+
         public static void SaveConfiguration(string path)
         {
-            XElement tags = new XElement("Tag");
-            foreach(Tag tag in Tags)
-            {
-                object lowLimit = null;
-                tag.TagSpecific.TryGetValue("LowLimit", out lowLimit);
-                object highLimit = null;
-                tag.TagSpecific.TryGetValue("HighLimit", out highLimit);
-                object ScanTime = null;
-                tag.TagSpecific.TryGetValue("ScanTime", out ScanTime);
-                object Scan = null;
-                tag.TagSpecific.TryGetValue("Scan", out Scan);
-                object Units = null;
-                tag.TagSpecific.TryGetValue("Units", out Units);
+            var config = new XElement("Config",
+                new XElement("Tag",
+                    from t in Tags
+                    select new XElement("TagItem",
+                        new XAttribute("Id", t.id),
+                        new XAttribute("Name", t.name),
+                        new XAttribute("Type", t.type),
+                        new XAttribute("Description", t.Description ?? ""),
+                        new XAttribute("IOAddress", t.IOAddress ?? ""),
+                        new XAttribute("Value", t.currValue),
+                        from kv in t.TagSpecific
+                        select new XAttribute(kv.Key, kv.Value ?? "")
+                    )
+                ),
+                new XElement("Alarm",
+                    from a in Alarms
+                    select new XElement("AlarmItem",
+                        new XAttribute("Id", a.Id),
+                        new XAttribute("TagId", a.TagId),
+                        new XAttribute("LimitValue", a.LimitValue),
+                        new XAttribute("Direction", a.Direction),
+                        new XAttribute("Message", a.Message ?? "")
+                    )
+                ),
+                new XElement("ActivatedAlarm",
+                    from aa in ActivatedAlarms
+                    select new XElement("ActivatedAlarmItem",
+                        new XAttribute("AlarmId", aa.AlarmId),
+                        new XAttribute("TagName", aa.TagName ?? ""),
+                        new XAttribute("Time", aa.Time)
+                    )
+                )
+            );
 
-                if(tag.type == TagType.DI)
-                {
-                    tags.Add(new XElement(
-                    "TagItem", tag.id,
-                    new XAttribute("Name", tag.name),
-                    new XAttribute("Type", tag.type),
-                    new XAttribute("IOAddress", tag.IOAddress),
-                    new XAttribute("Value", tag.currValue),
-                    new XAttribute("Description", tag.Description),
-                    new XAttribute("ScanTime", ScanTime),
-                    new XAttribute("Scan", Scan)
-                    ));
-                }
-                else if(tag.type == TagType.DO)
-                {
-                    tags.Add(new XElement(
-                    "TagItem", tag.id,
-                    new XAttribute("Name", tag.name),
-                    new XAttribute("Type", tag.type),
-                    new XAttribute("IOAddress", tag.IOAddress),
-                    new XAttribute("Value", tag.currValue),
-                    new XAttribute("Description", tag.Description)
-                    ));
-                }
-                else if(tag.type == TagType.AI)
-                {
-                    tags.Add(new XElement(
-                    "TagItem", tag.id,
-                    new XAttribute("Name", tag.name),
-                    new XAttribute("Type", tag.type),
-                    new XAttribute("IOAddress", tag.IOAddress),
-                    new XAttribute("Value", tag.currValue),
-                    new XAttribute("Description", tag.Description),
-                    new XAttribute("LowLimit", lowLimit),
-                    new XAttribute("HighLimit", highLimit),
-                    new XAttribute("ScanTime", ScanTime),
-                    new XAttribute("Scan", Scan),
-                    new XAttribute("Units", Units)
-                    ));
-                }
-                else if (tag.type == TagType.AO)
-                {
-                    tags.Add(new XElement(
-                    "TagItem", tag.id,
-                    new XAttribute("Name", tag.name),
-                    new XAttribute("Type", tag.type),
-                    new XAttribute("IOAddress", tag.IOAddress),
-                    new XAttribute("Value", tag.currValue),
-                    new XAttribute("Description", tag.Description),
-                    new XAttribute("LowLimit", lowLimit),
-                    new XAttribute("HighLimit", highLimit),
-                    new XAttribute("Units", Units)
-                    ));
-                }
-
-            }
-            XElement alarms = new XElement("Alarm");
-            foreach(Alarm alarm in Alarms)
-            {
-                alarms.Add(new XElement(
-                "AlarmItem", alarm.Id,
-                new XAttribute("TagId", alarm.TagId),
-                new XAttribute("LimitValue", alarm.LimitValue),
-                new XAttribute("Message", alarm.Message),
-                new XAttribute("IsActivated", alarm.isActivated),
-                new XAttribute("Direction", alarm.Direction)
-                ));
-            }
-            XElement activatedAlarms = new XElement("ActivatedAlarm");
-            foreach(ActivatedAlarm activatedAlarm in ActivatedAlarms)
-            {
-                activatedAlarms.Add(new XElement(
-                    "ActivatedAlarmItem", activatedAlarm.AlarmId,
-                    new XAttribute("Time", activatedAlarm.Time),
-                    new XAttribute("Message", activatedAlarm.Message),
-                    new XAttribute("TagName", activatedAlarm.TagName)
-                    ));
-            }
-
-            XElement saveFileElement = new XElement("Config");
-            saveFileElement.Add(tags);
-            saveFileElement.Add(alarms);
-            saveFileElement.Add(activatedAlarms);
-            saveFileElement.Save(path);
+            config.Save(path);
         }
+
+        public static void LoadConfiguration(string path)
+        {
+            if (!File.Exists(path)) return;
+
+            lock (stateLock)
+            {
+                // Bezbedno obriši postojeće (zaustavi skenere itd.)
+                TerminateAllScanners();
+                Tags.Clear();
+                Alarms.Clear();
+                ActivatedAlarms.Clear();
+                UpdateInputOutputTags();
+
+                var config = XElement.Load(path);
+
+                // 1) Parsiraj alarme u privremen listu (ne dodaj još u ContextClass)
+                var alarmsTemp = new List<Alarm>();
+                foreach (var aElem in config.Element("Alarm")?.Elements("AlarmItem") ?? Enumerable.Empty<XElement>())
+                {
+                    int aid = int.Parse(aElem.Attribute("Id")?.Value ?? "0");
+                    int tagId = int.Parse(aElem.Attribute("TagId")?.Value ?? "0");
+                    double limit = double.TryParse(aElem.Attribute("LimitValue")?.Value, out var lv) ? lv : 0;
+                    AlarmDirection dir = Enum.TryParse<AlarmDirection>(aElem.Attribute("Direction")?.Value, out var dd) ? dd : AlarmDirection.HIGH;
+                    string message = aElem.Attribute("Message")?.Value ?? "";
+                    bool isActivated = bool.TryParse(aElem.Attribute("IsActivated")?.Value, out var ia) ? ia : false;
+
+                    // Koristimo konstruktor koji ukljucuje isActivated (ako postoji)
+                    alarmsTemp.Add(new Alarm(aid, tagId, limit, dir, message, isActivated));
+                }
+
+                // 2) Parsiraj tagove i dodaj ih (bez alarm-a) koristeci postojece konstruktore
+                foreach (var elem in config.Element("Tag")?.Elements("TagItem") ?? Enumerable.Empty<XElement>())
+                {
+                    int id = int.Parse(elem.Attribute("Id")?.Value ?? "0");
+                    string name = elem.Attribute("Name")?.Value ?? "";
+                    TagType type = Enum.TryParse<TagType>(elem.Attribute("Type")?.Value, out var tt) ? tt : TagType.DI;
+                    string desc = elem.Attribute("Description")?.Value ?? "";
+                    string io = elem.Attribute("IOAddress")?.Value ?? "";
+                    double currValue = double.TryParse(elem.Attribute("Value")?.Value, out var cv) ? cv : 0;
+
+                    if (type == TagType.DI)
+                    {
+                        int scanTime = int.TryParse(elem.Attribute("ScanTime")?.Value, out var st) ? st : 1000;
+                        bool scan = bool.TryParse(elem.Attribute("Scan")?.Value, out var s) ? s : true;
+                        AddTag(new Tag(id, name, type, desc, io, scanTime, scan));
+                    }
+                    else if (type == TagType.DO)
+                    {
+                        float init = (float)currValue;
+                        AddTag(new Tag(id, name, type, desc, io, init));
+                    }
+                    else if (type == TagType.AI)
+                    {
+                        float low = float.TryParse(elem.Attribute("LowLimit")?.Value, out var lowv) ? (float)lowv : 0f;
+                        float high = float.TryParse(elem.Attribute("HighLimit")?.Value, out var highv) ? (float)highv : 0f;
+                        string units = elem.Attribute("Units")?.Value ?? "";
+                        int scanTime = int.TryParse(elem.Attribute("ScanTime")?.Value, out var st) ? st : 1000;
+                        bool scan = bool.TryParse(elem.Attribute("Scan")?.Value, out var s) ? s : true;
+
+                        // Prosledi prazan spisak alarm-a — kasnije ih dodajemo kroz AddAlarm
+                        AddTag(new Tag(id, name, type, desc, io, low, high, units, new List<Alarm>(), scanTime, scan));
+                    }
+                    else if (type == TagType.AO)
+                    {
+                        float low = float.TryParse(elem.Attribute("LowLimit")?.Value, out var lowv) ? (float)lowv : 0f;
+                        float high = float.TryParse(elem.Attribute("HighLimit")?.Value, out var highv) ? (float)highv : 0f;
+                        string units = elem.Attribute("Units")?.Value ?? "";
+                        float init = (float)currValue;
+                        AddTag(new Tag(id, name, type, desc, io, low, high, units, init));
+                    }
+                }
+
+                // 3) Sada dodaj alarme u ContextClass (tako da se povezu sa tag-ovima)
+                foreach (var alarm in alarmsTemp)
+                {
+                    AddAlarm(alarm); // AddAlarm ce dodati alarm u Alarms listu i u tag.TagSpecific["Alarms"]
+                }
+
+                // 4) Aktivirani alarmi
+                foreach (var act in config.Element("ActivatedAlarm")?.Elements("ActivatedAlarmItem") ?? Enumerable.Empty<XElement>())
+                {
+                    int aid = int.Parse(act.Attribute("AlarmId")?.Value ?? "0");
+                    string tagName = act.Attribute("TagName")?.Value ?? "";
+                    string message = act.Attribute("Message")?.Value ?? "";
+                    DateTime time = DateTime.TryParse(act.Attribute("Time")?.Value, out var t) ? t : DateTime.Now;
+
+                    ActivatedAlarms.Add(new ActivatedAlarm(aid, tagName, message, time));
+                }
+
+                UpdateInputOutputTags();
+            }
+        }
+
+        /*public static void SaveConfiguration(string path)
+         {
+             XElement tags = new XElement("Tag");
+             foreach(Tag tag in Tags)
+             {
+                 object lowLimit = null;
+                 tag.TagSpecific.TryGetValue("LowLimit", out lowLimit);
+                 object highLimit = null;
+                 tag.TagSpecific.TryGetValue("HighLimit", out highLimit);
+                 object ScanTime = null;
+                 tag.TagSpecific.TryGetValue("ScanTime", out ScanTime);
+                 object Scan = null;
+                 tag.TagSpecific.TryGetValue("Scan", out Scan);
+                 object Units = null;
+                 tag.TagSpecific.TryGetValue("Units", out Units);
+
+                 if(tag.type == TagType.DI)
+                 {
+                     tags.Add(new XElement(
+                     "TagItem", tag.id,
+                     new XAttribute("Name", tag.name),
+                     new XAttribute("Type", tag.type),
+                     new XAttribute("IOAddress", tag.IOAddress),
+                     new XAttribute("Value", tag.currValue),
+                     new XAttribute("Description", tag.Description),
+                     new XAttribute("ScanTime", ScanTime),
+                     new XAttribute("Scan", Scan)
+                     ));
+                 }
+                 else if(tag.type == TagType.DO)
+                 {
+                     tags.Add(new XElement(
+                     "TagItem", tag.id,
+                     new XAttribute("Name", tag.name),
+                     new XAttribute("Type", tag.type),
+                     new XAttribute("IOAddress", tag.IOAddress),
+                     new XAttribute("Value", tag.currValue),
+                     new XAttribute("Description", tag.Description)
+                     ));
+                 }
+                 else if(tag.type == TagType.AI)
+                 {
+                     tags.Add(new XElement(
+                     "TagItem", tag.id,
+                     new XAttribute("Name", tag.name),
+                     new XAttribute("Type", tag.type),
+                     new XAttribute("IOAddress", tag.IOAddress),
+                     new XAttribute("Value", tag.currValue),
+                     new XAttribute("Description", tag.Description),
+                     new XAttribute("LowLimit", lowLimit),
+                     new XAttribute("HighLimit", highLimit),
+                     new XAttribute("ScanTime", ScanTime),
+                     new XAttribute("Scan", Scan),
+                     new XAttribute("Units", Units)
+                     ));
+                 }
+                 else if (tag.type == TagType.AO)
+                 {
+                     tags.Add(new XElement(
+                     "TagItem", tag.id,
+                     new XAttribute("Name", tag.name),
+                     new XAttribute("Type", tag.type),
+                     new XAttribute("IOAddress", tag.IOAddress),
+                     new XAttribute("Value", tag.currValue),
+                     new XAttribute("Description", tag.Description),
+                     new XAttribute("LowLimit", lowLimit),
+                     new XAttribute("HighLimit", highLimit),
+                     new XAttribute("Units", Units)
+                     ));
+                 }
+
+             }
+             XElement alarms = new XElement("Alarm");
+             foreach(Alarm alarm in Alarms)
+             {
+                 alarms.Add(new XElement(
+                 "AlarmItem", alarm.Id,
+                 new XAttribute("TagId", alarm.TagId),
+                 new XAttribute("LimitValue", alarm.LimitValue),
+                 new XAttribute("Message", alarm.Message),
+                 new XAttribute("IsActivated", alarm.isActivated),
+                 new XAttribute("Direction", alarm.Direction)
+                 ));
+             }
+             XElement activatedAlarms = new XElement("ActivatedAlarm");
+             foreach(ActivatedAlarm activatedAlarm in ActivatedAlarms)
+             {
+                 activatedAlarms.Add(new XElement(
+                     "ActivatedAlarmItem", activatedAlarm.AlarmId,
+                     new XAttribute("Time", activatedAlarm.Time),
+                     new XAttribute("Message", activatedAlarm.Message),
+                     new XAttribute("TagName", activatedAlarm.TagName)
+                     ));
+             }
+
+             XElement saveFileElement = new XElement("Config");
+             saveFileElement.Add(tags);
+             saveFileElement.Add(alarms);
+             saveFileElement.Add(activatedAlarms);
+             saveFileElement.Save(path);
+         }
+         */
+
+
         public static void TerminateScanner(int tagId)
         {
             lock (stateLock)

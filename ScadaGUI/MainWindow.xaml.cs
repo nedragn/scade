@@ -309,7 +309,7 @@ namespace ScadaGUI
                 }
             }
         }
-        private void SaveConfigurationEventHandler(object sender, RoutedEventArgs e)
+        /*private void SaveConfigurationEventHandler(object sender, RoutedEventArgs e)
         {
             ContextClass.SaveConfiguration("config.xml");
             MessageBox.Show("Uspesno sacuvano!");
@@ -406,11 +406,38 @@ namespace ScadaGUI
                 RefreshGrid();
             }
             */
-            if (dlg.ShowDialog() == true)
+        /*    if (dlg.ShowDialog() == true)
             ContextClass.LoadConfiguration(dlg.FileName);
 
             RefreshGrid();
+        }*/
+
+        private void SaveConfigurationEventHandler(object sender, RoutedEventArgs e)
+        {
+            var dlg = new SaveFileDialog();
+            dlg.Filter = "XML File (*.xml)|*.xml|All files (*.*)|*.*";
+
+            if (dlg.ShowDialog() == true)
+            {
+                ContextClass.SaveConfiguration(dlg.FileName);
+                MessageBox.Show("Uspešno sačuvano!");
+            }
         }
+
+        private void LoadConfigurationEventHandler(object sender, RoutedEventArgs e)
+        {
+            var dlg = new OpenFileDialog();
+            dlg.Filter = "XML File (*.xml)|*.xml|All files (*.*)|*.*";
+
+            if (dlg.ShowDialog() == true)
+            {
+                ContextClass.LoadConfiguration(dlg.FileName);
+                ContextClass.UpdateInputOutputTags();
+                RefreshGrid();
+                MessageBox.Show("Uspesno učitano!");
+            }
+        }
+
         // Osvježavanje DataGrid-a
         private void RefreshInputsGrid()
         {
