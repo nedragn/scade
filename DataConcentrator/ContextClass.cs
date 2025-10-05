@@ -67,15 +67,13 @@ namespace DataConcentrator
 
             lock (stateLock)
             {
-                if (!Tags.Any(t => t.name == tag.name)) // dodaj samo ako ne postoji već tag sa istim id
+                if (!Tags.Any(t => t.name == tag.name && t.id == tag.id)) //Dodaj ako ne postoji sa istim imenom i id-em
                 {
 
                     Tags.Add(tag);
                     UpdateInputOutputTags();
                     if (tag.isInput) 
                         StartScanner(tag);
-
-
                 }
             }
             return true;
@@ -99,10 +97,6 @@ namespace DataConcentrator
             }
             
         }
-
-        /// <summary>
-        /// Dodaje alarm u listu.
-        /// </summary>
         public static void AddAlarm(Alarm alarm)
         {
             lock (stateLock)
@@ -118,57 +112,52 @@ namespace DataConcentrator
                 UpdateInputOutputTags();
             }
         }
-
         /// <summary>
-        /// Uklanja alarm iz liste po njegovom Id.
+        /// Removes alarm from the internal list of alarms.
         /// </summary>
-        public static void RemoveAlarm(int alarmId)
+        /// <param name="alarm">Alarm object to be removed</param>
+        public static void RemoveAlarm(Alarm alarm)
         {
             lock (stateLock)
             {
-                //Treba dodati da se brise alarm i iz tag liste alarma
-                Alarms.RemoveAll(a => a.Id == alarmId);
+                //Remove alarm from tags list of alarms
+                if(Tags.Where(t => t.id == alarm.TagId).FirstOrDefault() != null)
+                    ((List<Alarm>)Tags.Where(t => t.id == alarm.TagId).First().TagSpecific["Alarms"]).RemoveAll(a => a.Id == alarm.Id);
+                //Remove from the acutal list of alarms
+                Alarms.RemoveAll(a => a.Id == alarm.Id);
                 ShiftAlarmIds();
             }
         }
-
-        /// <summary>
-        /// Pokreće skeniranje (novi thread) za dati tag.
-        /// Thread će u petlji čitati vrednost iz simulatora i javljaće promene.
-        /// </summary>
         public static void StartScanner(Tag tag)
         {
             if (tag == null) throw new ArgumentNullException(nameof(tag));
 
-            // obavezno startuj simulator pre nego što kreneš sa skeniranjem
             ConnectAndStartSimulator();
 
             lock (stateLock)
             {
-                if (activeScannerThreads.ContainsKey(tag.id))
-                    return; // već postoji skener za ovaj tag – ništa ne radi
+                if (activeScannerThreads.ContainsKey(tag.id)) return;
 
-                stopFlags[tag.id] = false; // resetuj zastavicu zaustavljanja
-
-                // kreiraj novi thread koji će stalno čitati vrednosti za ovaj tag
+                stopFlags[tag.id] = false; 
                 Thread t = new Thread(() => ScannerLoop(tag))
                 {
-                    IsBackground = true,          // da se thread ugasi automatski kad se zatvori app
+                    IsBackground = true,          
                     Name = $"Scanner_Tag_{tag.id}"
                 };
                 activeScannerThreads[tag.id] = t;
-                t.Start(); // pokreni skener
+                t.Start(); 
+
             }
         }
-        /*public static void LoadConfiguration(string pathToConfig)
+        public static void LoadConfiguration(string pathToConfig)
         {
-            lock(stateLock){ 
-                for (int i = 0; i < Tags.Count(); i++)
-                    RemoveTag(Tags[i].id);
-                for (int i = 0; i < Alarms.Count(); i++)
-                    RemoveAlarm(Alarms[i].Id);
+            lock(stateLock){
+                TerminateAllScanners();
+                Tags.Clear();
+                Alarms.Clear();
+                ActivatedAlarms.Clear();
                 UpdateInputOutputTags();
-            
+
                 XElement config = XElement.Load(pathToConfig);
                 List<Alarm> newAlarms = new List<Alarm>();
                 foreach (XElement alarm in config.Descendants("AlarmItem"))
@@ -221,7 +210,7 @@ namespace DataConcentrator
                             tag.Attribute("Units").Value,
                             double.Parse(tag.Attribute("Value").Value)
                         ));
-                    else if ((TagType)TagType.Parse(typeof(TagType), tag.Attribute("Type").Value) == TagType.AO)
+                    else if ((TagType)TagType.Parse(typeof(TagType), tag.Attribute("Type").Value) == TagType.AI)
                         AddTag(new Tag(
                             int.Parse(tag.Value),
                             tag.Attribute("Name").Value,
@@ -246,145 +235,12 @@ namespace DataConcentrator
                         DateTime.Parse(activatedAlarm.Attribute("Time").Value)
                     ));
                 }
+                UpdateInputOutputTags();
             }
 
-        }*/
-
-        
+        }
 
         public static void SaveConfiguration(string path)
-        {
-            var config = new XElement("Config",
-                new XElement("Tag",
-                    from t in Tags
-                    select new XElement("TagItem",
-                        new XAttribute("Id", t.id),
-                        new XAttribute("Name", t.name),
-                        new XAttribute("Type", t.type),
-                        new XAttribute("Description", t.Description ?? ""),
-                        new XAttribute("IOAddress", t.IOAddress ?? ""),
-                        new XAttribute("Value", t.currValue),
-                        from kv in t.TagSpecific
-                        select new XAttribute(kv.Key, kv.Value ?? "")
-                    )
-                ),
-                new XElement("Alarm",
-                    from a in Alarms
-                    select new XElement("AlarmItem",
-                        new XAttribute("Id", a.Id),
-                        new XAttribute("TagId", a.TagId),
-                        new XAttribute("LimitValue", a.LimitValue),
-                        new XAttribute("Direction", a.Direction),
-                        new XAttribute("Message", a.Message ?? "")
-                    )
-                ),
-                new XElement("ActivatedAlarm",
-                    from aa in ActivatedAlarms
-                    select new XElement("ActivatedAlarmItem",
-                        new XAttribute("AlarmId", aa.AlarmId),
-                        new XAttribute("TagName", aa.TagName ?? ""),
-                        new XAttribute("Time", aa.Time)
-                    )
-                )
-            );
-
-            config.Save(path);
-        }
-
-        public static void LoadConfiguration(string path)
-        {
-            if (!File.Exists(path)) return;
-
-            lock (stateLock)
-            {
-                // Bezbedno obriši postojeće (zaustavi skenere itd.)
-                TerminateAllScanners();
-                Tags.Clear();
-                Alarms.Clear();
-                ActivatedAlarms.Clear();
-                UpdateInputOutputTags();
-
-                var config = XElement.Load(path);
-
-                // 1) Parsiraj alarme u privremen listu (ne dodaj još u ContextClass)
-                var alarmsTemp = new List<Alarm>();
-                foreach (var aElem in config.Element("Alarm")?.Elements("AlarmItem") ?? Enumerable.Empty<XElement>())
-                {
-                    int aid = int.Parse(aElem.Attribute("Id")?.Value ?? "0");
-                    int tagId = int.Parse(aElem.Attribute("TagId")?.Value ?? "0");
-                    double limit = double.TryParse(aElem.Attribute("LimitValue")?.Value, out var lv) ? lv : 0;
-                    AlarmDirection dir = Enum.TryParse<AlarmDirection>(aElem.Attribute("Direction")?.Value, out var dd) ? dd : AlarmDirection.HIGH;
-                    string message = aElem.Attribute("Message")?.Value ?? "";
-                    bool isActivated = bool.TryParse(aElem.Attribute("IsActivated")?.Value, out var ia) ? ia : false;
-
-                    // Koristimo konstruktor koji ukljucuje isActivated (ako postoji)
-                    alarmsTemp.Add(new Alarm(aid, tagId, limit, dir, message, isActivated));
-                }
-
-                // 2) Parsiraj tagove i dodaj ih (bez alarm-a) koristeci postojece konstruktore
-                foreach (var elem in config.Element("Tag")?.Elements("TagItem") ?? Enumerable.Empty<XElement>())
-                {
-                    int id = int.Parse(elem.Attribute("Id")?.Value ?? "0");
-                    string name = elem.Attribute("Name")?.Value ?? "";
-                    TagType type = Enum.TryParse<TagType>(elem.Attribute("Type")?.Value, out var tt) ? tt : TagType.DI;
-                    string desc = elem.Attribute("Description")?.Value ?? "";
-                    string io = elem.Attribute("IOAddress")?.Value ?? "";
-                    double currValue = double.TryParse(elem.Attribute("Value")?.Value, out var cv) ? cv : 0;
-
-                    if (type == TagType.DI)
-                    {
-                        int scanTime = int.TryParse(elem.Attribute("ScanTime")?.Value, out var st) ? st : 1000;
-                        bool scan = bool.TryParse(elem.Attribute("Scan")?.Value, out var s) ? s : true;
-                        AddTag(new Tag(id, name, type, desc, io, scanTime, scan));
-                    }
-                    else if (type == TagType.DO)
-                    {
-                        float init = (float)currValue;
-                        AddTag(new Tag(id, name, type, desc, io, init));
-                    }
-                    else if (type == TagType.AI)
-                    {
-                        float low = float.TryParse(elem.Attribute("LowLimit")?.Value, out var lowv) ? (float)lowv : 0f;
-                        float high = float.TryParse(elem.Attribute("HighLimit")?.Value, out var highv) ? (float)highv : 0f;
-                        string units = elem.Attribute("Units")?.Value ?? "";
-                        int scanTime = int.TryParse(elem.Attribute("ScanTime")?.Value, out var st) ? st : 1000;
-                        bool scan = bool.TryParse(elem.Attribute("Scan")?.Value, out var s) ? s : true;
-
-                        // Prosledi prazan spisak alarm-a — kasnije ih dodajemo kroz AddAlarm
-                        AddTag(new Tag(id, name, type, desc, io, low, high, units, new List<Alarm>(), scanTime, scan));
-                    }
-                    else if (type == TagType.AO)
-                    {
-                        float low = float.TryParse(elem.Attribute("LowLimit")?.Value, out var lowv) ? (float)lowv : 0f;
-                        float high = float.TryParse(elem.Attribute("HighLimit")?.Value, out var highv) ? (float)highv : 0f;
-                        string units = elem.Attribute("Units")?.Value ?? "";
-                        float init = (float)currValue;
-                        AddTag(new Tag(id, name, type, desc, io, low, high, units, init));
-                    }
-                }
-
-                // 3) Sada dodaj alarme u ContextClass (tako da se povezu sa tag-ovima)
-                foreach (var alarm in alarmsTemp)
-                {
-                    AddAlarm(alarm); // AddAlarm ce dodati alarm u Alarms listu i u tag.TagSpecific["Alarms"]
-                }
-
-                // 4) Aktivirani alarmi
-                foreach (var act in config.Element("ActivatedAlarm")?.Elements("ActivatedAlarmItem") ?? Enumerable.Empty<XElement>())
-                {
-                    int aid = int.Parse(act.Attribute("AlarmId")?.Value ?? "0");
-                    string tagName = act.Attribute("TagName")?.Value ?? "";
-                    string message = act.Attribute("Message")?.Value ?? "";
-                    DateTime time = DateTime.TryParse(act.Attribute("Time")?.Value, out var t) ? t : DateTime.Now;
-
-                    ActivatedAlarms.Add(new ActivatedAlarm(aid, tagName, message, time));
-                }
-
-                UpdateInputOutputTags();
-            }
-        }
-
-        /*public static void SaveConfiguration(string path)
          {
              XElement tags = new XElement("Tag");
              foreach(Tag tag in Tags)
@@ -484,10 +340,7 @@ namespace DataConcentrator
              saveFileElement.Add(alarms);
              saveFileElement.Add(activatedAlarms);
              saveFileElement.Save(path);
-         }
-         */
-
-
+         }   
         public static void TerminateScanner(int tagId)
         {
             lock (stateLock)
@@ -510,11 +363,6 @@ namespace DataConcentrator
                 
             }
         }
-
-        /// <summary>
-        /// Zaustavlja sve skenere i gasi simulator.
-        /// Koristi se npr. pri zatvaranju aplikacije.
-        /// </summary>
         public static void TerminateAllScanners()
         {
             List<int> running;
@@ -534,11 +382,6 @@ namespace DataConcentrator
                 }
             }
         }
-
-        /// <summary>
-        /// Forsira izlaz (piše vrednost u PLC adresu).
-        /// Koristi se za AO/DO tagove da "pošaljemo" vrednost u simulator.
-        /// </summary>
         public static void ForceOutput(Tag tag)
         {
             lock (plcSimLock)
@@ -557,8 +400,6 @@ namespace DataConcentrator
                 }
             }
         }
-
-        // --- PRIVATNE METODE ---
         public static void UpdateInputOutputTags()
         {
             InputTags = Tags.Where(t => t.type == TagType.DI || t.type == TagType.AI).ToList();
@@ -569,6 +410,15 @@ namespace DataConcentrator
             int idx = 0;
             foreach(Tag tag in Tags)
             {
+                if (Alarms.Where(a => a.TagId == tag.id).DefaultIfEmpty() != null)
+                {
+
+                    foreach (Alarm alarm in Alarms.Where(a => a.TagId == tag.id))
+                    {
+                        alarm.TagId = idx;
+                        Console.WriteLine($"Found alarm with tag id: {alarm.TagId}");
+                    }
+                }
                 tag.id = idx;
                 idx++;
             }
@@ -582,11 +432,6 @@ namespace DataConcentrator
                 idx++;
             }
         }
-        /// <summary>
-        /// Petlja koja se izvršava u posebnom thread-u i stalno čita vrednost za tag.
-        /// Ako se vrednost promeni -> podiže event.
-        /// Takođe proverava da li je neki alarm aktiviran.
-        /// </summary>
         private static void ScannerLoop(Tag tag)
         {
             int intervalMs = (int)tag.TagSpecific["ScanTime"]; // default 1s interval
@@ -659,10 +504,6 @@ namespace DataConcentrator
                     stopFlags.Remove(tag.id);
             }
         }
-
-        /// <summary>
-        /// Pomoćna metoda za čitanje vrednosti iz simulatora.
-        /// </summary>
         private static double ReadValueFromSimulator(string address)
         {
             if (string.IsNullOrEmpty(address)) return double.NaN;

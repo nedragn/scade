@@ -34,11 +34,13 @@ namespace ScadaGUI
             Tag testTag2 = new Tag(1, "Test tag 2", TagType.AI, " ", "ADDR002", -10, 10, "V", new List<Alarm>(), 1000, true);
             Tag testTag3 = new Tag(2, "Test tag 3", TagType.DO, " ", "ADDR005", 1);
             Tag testTag4 = new Tag(3, "Test tag 4", TagType.AO, " ", "ADDR006", -10, 10, "V", (float)2.7);
+            Tag testTag5 = new Tag(4, "Test tag 5", TagType.AI, " ", "ADDR003", -50, 50, "A", new List<Alarm>(), 10, true);
 
             ContextClass.AddTag(testTag1);
             ContextClass.AddTag(testTag2);
             ContextClass.AddTag(testTag3);
             ContextClass.AddTag(testTag4);
+            ContextClass.AddTag(testTag5);
             //ContextClass.OutputTags = ContextClass.Tags.Where(t => t.type == TagType.DO || t.type == TagType.AO).ToList();
             // Pretplata na eventove DataConcentrator-a
             ContextClass.ValueChanged += ContextClass_ValueChanged;
@@ -481,6 +483,7 @@ namespace ScadaGUI
         private void AddAlarmBtn_Click(object sender, RoutedEventArgs e)
         {
             string selectedTagName = AITagCombo.SelectedItem as string;
+            if (selectedTagName == null) return;
             Tag selectedTag = ContextClass.Tags.Where(t => t.name == selectedTagName).First();
             Console.WriteLine($"Selcted tag: {selectedTag.name}");
             if (selectedTag == null) Console.WriteLine("Tag is null");
@@ -512,7 +515,7 @@ namespace ScadaGUI
         {
             if (AlarmsGrid.SelectedItem is Alarm selectedAlarm)
             {
-                ContextClass.RemoveAlarm(selectedAlarm.Id);
+                ContextClass.RemoveAlarm(selectedAlarm);
                 RefreshAlarmsGrid();
             }
         }
