@@ -21,14 +21,11 @@ namespace ScadaGUI
             
             InitializeComponent();
             
-
             // Inicijalizacija PLC Simulator
             _plc = new PLCSimulatorManager();
             _plc.StartPLCSimulator();
 
             AddressBox.ItemsSource = PLCSimulatorManager.addressValues.Keys;
-
-
 
             Tag testTag1 = new Tag(0,"Test tag 1", TagType.AI, " ", "ADDR001", -50, 50, "A", new List<Alarm>(), 1000, true);
             Tag testTag2 = new Tag(1, "Test tag 2", TagType.AI, " ", "ADDR002", -10, 10, "V", new List<Alarm>(), 1000, true);
@@ -41,10 +38,9 @@ namespace ScadaGUI
             ContextClass.AddTag(testTag3);
             ContextClass.AddTag(testTag4);
             ContextClass.AddTag(testTag5);
-            //ContextClass.OutputTags = ContextClass.Tags.Where(t => t.type == TagType.DO || t.type == TagType.AO).ToList();
-            // Pretplata na eventove DataConcentrator-a
-            ContextClass.ValueChanged += ContextClass_ValueChanged;
-            ContextClass.AlarmRaised += ContextClass_AlarmRaised;
+
+            ContextClass.ValueChanged += ContextClassValueChangedEventHandler;
+            ContextClass.AlarmRaised += ContextClassAlarmRaisedEventHandler;
             RefreshGrid();
             
 
@@ -122,7 +118,7 @@ namespace ScadaGUI
             {
                 Alarm editedAlarm = e.Row.Item as Alarm;
                 editedAlarm = ContextClass.Alarms[editedAlarm.Id];
-                ContextClass.ActivatedAlarms.RemoveAll(a => a.AlarmId == editedAlarm.Id);
+                //ContextClass.ActivatedAlarms.RemoveAll(a => a.AlarmId == editedAlarm.Id);
             }
         }
         private void TagLoadingRowsEventHandler(object sender, DataGridRowEventArgs e)
@@ -132,7 +128,20 @@ namespace ScadaGUI
             MenuItem removeItem = new MenuItem { Header = "Remove" };
 
             removeItem.Click += (senderClick, eventArgs) => {
-                ContextClass.RemoveTag((e.Row.Item as Tag).id);
+                ContextClass.RemoveTag(e.Row.Item as Tag);
+                RefreshGrid();
+            };
+            ctxMenu.Items.Add(removeItem);
+            e.Row.ContextMenu = ctxMenu;
+        }
+        private void AlarmLoadingRowsEventHandler(object sender, DataGridRowEventArgs e)
+        {
+            ContextMenu ctxMenu = new ContextMenu();
+            //Make a event handler for clicking the remove button inside the context menu.
+            MenuItem removeItem = new MenuItem { Header = "Remove" };
+
+            removeItem.Click += (senderClick, eventArgs) => {
+                ContextClass.RemoveAlarm(e.Row.Item as Alarm);
                 RefreshGrid();
             };
             ctxMenu.Items.Add(removeItem);
@@ -142,10 +151,10 @@ namespace ScadaGUI
         {
             e.Row.Background = Brushes.Red;
         }
-        private void ContextClass_ValueChanged(object sender, EventArgs e)
+        private void ContextClassValueChangedEventHandler(object sender, EventArgs e)
         {
         }
-        private void ContextClass_AlarmRaised(object sender, EventArgs e)
+        private void ContextClassAlarmRaisedEventHandler(object sender, EventArgs e)
         {
             Dispatcher.Invoke(() =>
             {
@@ -187,8 +196,7 @@ namespace ScadaGUI
             }
         }
         //Returns a truth value corresponding to the validity of the tag
-        // Dodavanje taga, cela logika proveravanja ispravnosti tag treba biti u ContextClass
-        private void AddTagBtn_Click(object sender, RoutedEventArgs e)
+        private void AddTagBtnClickEventHandler(object sender, RoutedEventArgs e)
         {
             if (!(TagTypeCombo.SelectedItem is ComboBoxItem typeItem))
             {
@@ -198,6 +206,11 @@ namespace ScadaGUI
 
             TagType type = (TagType)Enum.Parse(typeof(TagType), typeItem.Content.ToString());
             string name = TagNameBox.Text;
+            if (ContextClass.Tags.Where(t => t.name == name).FirstOrDefault() != null)
+            {
+                MessageBox.Show("Tag with that name already exists pleas choose a different name. ");
+                return;
+            }
             string desc = DescriptionBox.Text;
             string addr = AddressBox.Text;
             if (PLCSimulatorManager.writtenAdresses.Contains(addr))
@@ -255,7 +268,7 @@ namespace ScadaGUI
             }
         }
         // Uklanjanje taga
-        private void RemoveTagBtn_Click(object sender, RoutedEventArgs e)
+        private void RemoveTagBtnClickEventHandler(object sender, RoutedEventArgs e)
         {
             // Dobijamo tag[ove] koji je selektovan u DataGrid-u
             List<Tag> tagsToRemove = new List<Tag>();
@@ -268,33 +281,22 @@ namespace ScadaGUI
             {
                 if (tagToRemove != null)
                 {
-                    RefreshGrid();
-
-                    // Ako je AI/DI tag, zaustavi njegov skener
-                    if (tagToRemove.type == TagType.AI || tagToRemove.type == TagType.DI)
-                    {
-                        ContextClass.TerminateScanner(tagToRemove.id);
-                    }
-
                     // Ukloni iz DataConcentrator-a
-                    ContextClass.RemoveTag(tagToRemove.id);
+                    ContextClass.RemoveTag(tagToRemove);
                     PLCSimulatorManager.writtenAdresses.Remove(tagToRemove.IOAddress);
+                    RefreshGrid();
                 }
             }
-
-
         }
-        private void ReportBtn_Click(object sender, RoutedEventArgs e)
+        private void ReportBtnClickEventHandler(object sender, RoutedEventArgs e)
         {
-            
-            string fileName = @"..\..\log.txt";
+            string fileName = "log.txt";
             
             using (var writer = new StreamWriter(fileName, append: true))
             {
                 foreach(DateTime time in ContextClass.InputTagsValueHistory.Keys)
                 {
                     
-                    //writer.WriteLine($"Time : {time}");
                     foreach(string addr in ContextClass.InputTagsValueHistory[time].Keys)
                     {
                         ContextClass.InputTagsValueHistory[time].OrderBy(a => a.Key);
@@ -311,109 +313,6 @@ namespace ScadaGUI
                 }
             }
         }
-        /*private void SaveConfigurationEventHandler(object sender, RoutedEventArgs e)
-        {
-            ContextClass.SaveConfiguration("config.xml");
-            MessageBox.Show("Uspesno sacuvano!");
-
-        }
-        private void LoadConfigurationEventHandler(object sender, RoutedEventArgs e)
-        {
-            var dlg = new OpenFileDialog();
-            dlg.Filter = "XML File (*.xml)|*.xml|All files (*.*)|*.*";
-            /*
-            if (dlg.ShowDialog() == true)
-            {
-                string[] textFileContent = File.ReadAllLines(dlg.FileName);
-                //Console.WriteLine(textFileContent[0]);
-                List<Tag> tagsToLoad = new List<Tag>();
-                List<Alarm> alarmsToLoad = new List<Alarm>();
-                List<ActivatedAlarm> activatedAlarmsToLoad = new List<ActivatedAlarm>();
-                foreach(string fieldContent in textFileContent)
-                {
-                    if (fieldContent.Contains("Alarm: ") && !fieldContent.Contains("ActivatedAlarm: "))
-                    {
-                        string field = fieldContent.Replace("Alarm: ", "");
-                        string[] tagFields = field.Split(',');
-                        Console.WriteLine($"--> { field}");
-                        int id = int.Parse(tagFields[0]);
-                        int tagId = int.Parse(tagFields[1]);
-                        double limitValue = double.Parse(tagFields[2]);
-                        AlarmDirection direction = (AlarmDirection)AlarmDirection.Parse(typeof(AlarmDirection), tagFields[3]);
-                        string Message = tagFields[4];
-                        bool isActivated = bool.Parse(tagFields[5]);
-                        alarmsToLoad.Add(new Alarm(id, tagId, limitValue, direction, Message, isActivated));
-
-                    }
-                    if (fieldContent.Contains("Tag: "))
-                    {
-                        string field = fieldContent.Replace("Tag: ", "");
-                        field = field.Replace("/,", "");
-                        Console.WriteLine(field);
-                        string[] tagFields = field.Split(',');
-                        //tagFields.ToList().ForEach(l => Console.WriteLine(l));
-
-                        int id = int.Parse(tagFields[0]);
-                        string name = tagFields[1];
-                        TagType type = (TagType)TagType.Parse(typeof(TagType), tagFields[2]);
-                        string Description = tagFields[3];
-                        string IOAddress = tagFields[4];
-                        double currValue = double.Parse(tagFields[5]);
-
-
-                        if (type == TagType.DI) 
-                        {
-                            int ScanTime = int.Parse(tagFields[5]);
-                            bool Scan = bool.Parse(tagFields[6]);
-                            tagsToLoad.Add(new DataConcentrator.Tag(id, name, type, Description, IOAddress, ScanTime, Scan));
-                        }
-                        if (type == TagType.DO)
-                        {
-                            tagsToLoad.Add(new DataConcentrator.Tag(id, name, type, Description, IOAddress, currValue));
-                        }
-                        if (type == TagType.AI)
-                        {
-                            double LowLimit = double.Parse(tagFields[6]);
-                            double HighLimit = double.Parse(tagFields[7]);
-                            string Units = tagFields[8];
-                            List<Alarm> Alarms = new List<Alarm>();
-                            if (alarmsToLoad.Where(a => a.TagId == id).DefaultIfEmpty() != null)
-                                Alarms = alarmsToLoad.Where(a => a.TagId == id).ToList();
-                            int ScanTime = int.Parse(tagFields[9]);
-                            bool Scan = bool.Parse(tagFields[10]);
-                            tagsToLoad.Add(new DataConcentrator.Tag(id, name, type, Description, IOAddress, LowLimit, HighLimit, Units, Alarms, ScanTime, Scan));
-                        }
-                        if (type == TagType.AO)
-                        {
-                            double LowLimit = double.Parse(tagFields[6]);
-                            double HighLimit = double.Parse(tagFields[7]);
-                            string Units = tagFields[8];
-                            tagsToLoad.Add(new DataConcentrator.Tag(id, name, type, Description, IOAddress,  LowLimit, HighLimit, Units, currValue));
-                        }
-                    }
-                    if(fieldContent.Contains("ActivatedAlarm: "))
-                    {
-                        string field = fieldContent.Replace("ActivatedAlarm: ", "");
-                        string[] tagFields = field.Split(',');
-                        Console.WriteLine(field);
-                        int AlarmId = int.Parse(tagFields[0]);
-                        string TagName = tagFields[1];
-                        string Message = tagFields[2];
-                        DateTime Time = DateTime.Parse(tagFields[3]);
-                        activatedAlarmsToLoad.Add(new ActivatedAlarm(AlarmId, TagName, Message, Time));
-                    }
-                }
-                ContextClass.LoadConfiguration(tagsToLoad, alarmsToLoad, activatedAlarmsToLoad);
-                ContextClass.UpdateInputOutputTags();
-                RefreshGrid();
-            }
-            */
-        /*    if (dlg.ShowDialog() == true)
-            ContextClass.LoadConfiguration(dlg.FileName);
-
-            RefreshGrid();
-        }*/
-
         private void SaveConfigurationEventHandler(object sender, RoutedEventArgs e)
         {
             var dlg = new SaveFileDialog();
@@ -439,8 +338,6 @@ namespace ScadaGUI
                 MessageBox.Show("Uspesno učitano!");
             }
         }
-
-        // Osvježavanje DataGrid-a
         private void RefreshInputsGrid()
         {
             InputTagsGrid.ItemsSource = null;
@@ -450,14 +347,11 @@ namespace ScadaGUI
         {
             OutputTagsGrid.ItemsSource = null;
             OutputTagsGrid.ItemsSource = ContextClass.OutputTags;
-
         }
         private void RefreshTagsGrid()
         {
-
             RefreshInputsGrid();
             RefreshOutputsGrid();
-            //TagsGrid.Items.Refresh();
 
             List<Tag> AITags = ContextClass.Tags.Where(t => t.type == TagType.AI).ToList();
             AITagCombo.ItemsSource = (from tag in AITags select tag.name).ToList();
@@ -466,11 +360,9 @@ namespace ScadaGUI
         {
             AlarmsGrid.ItemsSource = null;
             AlarmsGrid.ItemsSource = ContextClass.Alarms;
-            //AlarmsGrid.Items.Refresh();
 
             ActivatedAlarmsGrid.ItemsSource = null;
             ActivatedAlarmsGrid.ItemsSource = ContextClass.ActivatedAlarms;
-            //ActivatedAlarmsGrid.Items.Refresh();
         }
         private void RefreshGrid()
         {
@@ -479,8 +371,10 @@ namespace ScadaGUI
             RefreshAlarmsGrid();
         }
 
-        // Dodavanje alarma
-        private void AddAlarmBtn_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Event handler za klik na dodavanje alarma
+        /// </summary>
+        private void AddAlarmBtnClickEventHandler(object sender, RoutedEventArgs e)
         {
             string selectedTagName = AITagCombo.SelectedItem as string;
             if (selectedTagName == null) return;
@@ -510,8 +404,10 @@ namespace ScadaGUI
             }
         
         
-        // Uklanjanje alarma
-        private void RemoveAlarmBtn_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Event handler za klik na remove alarm button
+        /// </summary>
+        private void RemoveAlarmBtnClickEventHandler(object sender, RoutedEventArgs e)
         {
             if (AlarmsGrid.SelectedItem is Alarm selectedAlarm)
             {
@@ -519,9 +415,6 @@ namespace ScadaGUI
                 RefreshAlarmsGrid();
             }
         }
-
-        // Osvežavanje DataGrid-a za alarme
-
     }
 }
 

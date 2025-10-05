@@ -25,8 +25,8 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
 
@@ -79,9 +79,9 @@
 
             <!-- Dugmad -->
             <StackPanel Orientation="Horizontal" Margin="0 10">
-                <Button x:Name="AddTagBtn" Content="Add Tag" Width="100" Margin="5" Click="AddTagBtn_Click"/>
-                <Button x:Name="RemoveTagBtn" Content="Remove Tag" Width="100" Margin="5" Click="RemoveTagBtn_Click"/>
-                <Button x:Name="ReportBtn" Content="Report" Width="100" Margin="400 5 5 5" Click="ReportBtn_Click"/>
+                <Button x:Name="AddTagBtn" Content="Add Tag" Width="100" Margin="5" Click="AddTagBtnClickEventHandler"/>
+                <Button x:Name="RemoveTagBtn" Content="Remove Tag" Width="100" Margin="5" Click="RemoveTagBtnClickEventHandler"/>
+                <Button x:Name="ReportBtn" Content="Report" Width="100" Margin="400 5 5 5" Click="ReportBtnClickEventHandler"/>
                 <Button x:Name="SaveBtn" Content="Save Configuration" Width="100"  Margin ="0 5 5 5" Click="SaveConfigurationEventHandler"/>
                 <Button x:Name="LoadBtn" Content="Load Configuration" Width="100"  Margin ="0 5 5 5" Click="LoadConfigurationEventHandler"/>
             </StackPanel>
@@ -109,11 +109,12 @@
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0 5">
-                    <Button x:Name="AddAlarmBtn" Content="Add Alarm" Width="100" Margin="5" Click="AddAlarmBtn_Click"/>
-                    <Button x:Name="RemoveAlarmBtn" Content="Remove Alarm" Width="100" Margin="5" Click="RemoveAlarmBtn_Click"/>
+                    <Button x:Name="AddAlarmBtn" Content="Add Alarm" Width="100" Margin="5" Click="AddAlarmBtnClickEventHandler"/>
+                    <Button x:Name="RemoveAlarmBtn" Content="Remove Alarm" Width="100" Margin="5" Click="RemoveAlarmBtnClickEventHandler"/>
                 </StackPanel>
                 <TextBlock Text="Added Alarms" FontWeight="Bold" Margin="0 5"/>
-                <DataGrid x:Name="AlarmsGrid" Grid.Row ="1" AutoGenerateColumns="False" IsReadOnly="False" SelectionMode="Extended" Height="100" CellEditEnding="CellEditEndingEventHandler">
+                <DataGrid x:Name="AlarmsGrid" Grid.Row ="1" AutoGenerateColumns="False" IsReadOnly="False" SelectionMode="Extended" Height="100" CellEditEnding="CellEditEndingEventHandler"
+                          LoadingRow="AlarmLoadingRowsEventHandler">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Id" Binding="{Binding Id}" IsReadOnly="True"/>
                         <DataGridTextColumn Header="Tag Id" Binding="{Binding TagId}" IsReadOnly="True"/>
@@ -139,7 +140,7 @@
         <TextBlock Text="Input Tags" FontWeight="Bold" Margin="0 5" Grid.Column="0"  Grid.Row="2"/>
         <TextBlock Text="Output Tags" FontWeight="Bold" Margin="0 5" Grid.Column="1"  Grid.Row="2"/>
         <DataGrid x:Name="InputTagsGrid" Grid.Row="3" Grid.Column="0" AutoGenerateColumns="False" IsReadOnly="False" SelectionMode="Extended"
-                  LoadingRow="TagLoadingRowsEventHandler" Grid.ColumnSpan="2" Margin="0,0,437,0" CellEditEnding="CellEditEndingEventHandler">
+                  LoadingRow="TagLoadingRowsEventHandler" CellEditEnding="CellEditEndingEventHandler">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Id" Binding="{Binding id}" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Name" Binding="{Binding name}" IsReadOnly="True"/>
@@ -155,7 +156,7 @@
             </DataGrid.Columns>
         </DataGrid>
         <DataGrid x:Name="OutputTagsGrid" Grid.Row="3" Grid.Column="1"  AutoGenerateColumns="False" IsReadOnly="False" SelectionMode="Extended" CellEditEnding="CellEditEndingEventHandler" 
-          BeginningEdit="BeginningEditEventHandler" LoadingRow="TagLoadingRowsEventHandler" HorizontalAlignment="Left" Width="437" Margin="53,0,0,0">
+          BeginningEdit="BeginningEditEventHandler" LoadingRow="TagLoadingRowsEventHandler" HorizontalAlignment="Left">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Id" Binding="{Binding id}" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Name" Binding="{Binding name}" IsReadOnly="True"/>

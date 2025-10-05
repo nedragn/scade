@@ -16,11 +16,9 @@ namespace DataConcentrator
     {
         private static string defaultPath = "config.txt";
 
-        // --- Simulator i sinhronizacija ---
         private static PLCSimulatorManager plcSim = null; // čuva instancu PLCSimulator-a
         private static readonly object plcSimLock = new object(); // služi za zaključavanje pristupa simulatoru iz više thread-ova
 
-        // --- In-memory store (memorijske liste, bez baze) ---
         public static Dictionary<DateTime,Dictionary<string, double>> InputTagsValueHistory = new Dictionary<DateTime, Dictionary<string, double>>();
         public static readonly List<Tag> Tags = new List<Tag>();
         public static List<Tag> InputTags = new List<Tag>();
@@ -28,18 +26,12 @@ namespace DataConcentrator
         public static readonly List<Alarm> Alarms = new List<Alarm>();            // svi alarmi
         public static readonly List<ActivatedAlarm> ActivatedAlarms = new List<ActivatedAlarm>();
         
-
-        // --- Threading / skeneri ---
         private static readonly Dictionary<int, Thread> activeScannerThreads = new Dictionary<int, Thread>(); // za svaki tag id čuvamo thread koji ga skenira
         private static readonly Dictionary<int, bool> stopFlags = new Dictionary<int, bool>(); // zastavice za gašenje skenera
-        //public static readonly Dictionary<int, double> lastValue = new Dictionary<int, double>(); // poslednja poznata vrednost za svaki tag
         private static readonly object stateLock = new object(); // lock da sinhronizujemo pristup gornjim strukturama
 
-        // --- Eventi ---
         public static event EventHandler ValueChanged;   // GUI može da se "pretplati" na ovaj event – javi se kada se neka vrednost promeni
         public static event EventHandler AlarmRaised;    // GUI može da se "pretplati" na ovaj event – javi se kada se aktivira alarm
-
-        // --- JAVNE METODE ---
 
         /// <summary>
         /// Povezuje i startuje PLCSimulator (samo jednom).
@@ -58,7 +50,7 @@ namespace DataConcentrator
         }
 
         /// <summary>
-        /// Dodaje tag u listu (ali ne startuje njegovo skeniranje).
+        /// Dodaje tag u listu i startuje njegovo skeniranje ako je input.
         /// </summary>
         public static Boolean AddTag(Tag tag)
         {
@@ -67,33 +59,34 @@ namespace DataConcentrator
 
             lock (stateLock)
             {
-                if (!Tags.Any(t => t.name == tag.name && t.id == tag.id)) //Dodaj ako ne postoji sa istim imenom i id-em
+                if (!Tags.Any(t => t.name == tag.name || t.id == tag.id)) //Dodaj ako ne postoji sa istim imenom i id-em
                 {
 
                     Tags.Add(tag);
                     UpdateInputOutputTags();
                     if (tag.isInput) 
                         StartScanner(tag);
+                    return true;
                 }
             }
-            return true;
+            return false;
         }
 
         /// <summary>
         /// Briše tag iz liste i gasi njegov skener ako je radio.
         /// </summary>
-        public static void RemoveTag(int tagId)
+        public static void RemoveTag(Tag tag)
         {
             lock (stateLock)
             {
-                if (activeScannerThreads.ContainsKey(tagId))
-                    TerminateScanner(tagId); // prvo ugasi skener za taj tag
+                if (activeScannerThreads.ContainsKey(tag.id))
+                    TerminateScanner(tag.id); // prvo ugasi skener za taj tag
 
-                Tags.RemoveAll(t => t.id == tagId); // ukloni tag iz liste
+                Tags.RemoveAll(t => t.id == tag.id); // ukloni tag iz liste
                 ShiftTagIds();
                 UpdateInputOutputTags();
-                Alarms.RemoveAll(a => a.TagId ==  tagId);
-                stopFlags.Remove(tagId);
+                Alarms.RemoveAll(a => a.TagId ==  tag.id);
+                stopFlags.Remove(tag.id);
             }
             
         }
