@@ -16,8 +16,8 @@ namespace DataConcentrator
     {
         private static string defaultPath = "config.txt";
 
-        private static PLCSimulatorManager plcSim = null; // čuva instancu PLCSimulator-a
-        private static readonly object plcSimLock = new object(); // služi za zaključavanje pristupa simulatoru iz više thread-ova
+        private static PLCSimulatorManager plcSim = null; 
+        private static readonly object plcSimLock = new object();
 
         public static Dictionary<DateTime,Dictionary<string, double>> InputTagsValueHistory = new Dictionary<DateTime, Dictionary<string, double>>();
         public static readonly List<Tag> Tags = new List<Tag>();
@@ -33,10 +33,6 @@ namespace DataConcentrator
         public static event EventHandler ValueChanged;   // GUI može da se "pretplati" na ovaj event – javi se kada se neka vrednost promeni
         public static event EventHandler AlarmRaised;    // GUI može da se "pretplati" na ovaj event – javi se kada se aktivira alarm
 
-        /// <summary>
-        /// Povezuje i startuje PLCSimulator (samo jednom).
-        /// Ako simulator već radi, neće ga ponovo startovati.
-        /// </summary>
         public static void ConnectAndStartSimulator()
         {
             lock (plcSimLock) 
@@ -49,9 +45,6 @@ namespace DataConcentrator
             }
         }
 
-        /// <summary>
-        /// Dodaje tag u listu i startuje njegovo skeniranje ako je input.
-        /// </summary>
         public static Boolean AddTag(Tag tag)
         {
             Boolean isTagValid = tag.IsTagValid();
@@ -61,7 +54,6 @@ namespace DataConcentrator
             {
                 if (!Tags.Any(t => t.name == tag.name || t.id == tag.id)) //Dodaj ako ne postoji sa istim imenom i id-em
                 {
-
                     Tags.Add(tag);
                     UpdateInputOutputTags();
                     if (tag.isInput) 
@@ -71,25 +63,21 @@ namespace DataConcentrator
             }
             return false;
         }
-
-        /// <summary>
-        /// Briše tag iz liste i gasi njegov skener ako je radio.
-        /// </summary>
         public static void RemoveTag(Tag tag)
         {
             lock (stateLock)
             {
                 if (activeScannerThreads.ContainsKey(tag.id))
-                    TerminateScanner(tag.id); // prvo ugasi skener za taj tag
+                    TerminateScanner(tag.id); 
 
-                Tags.RemoveAll(t => t.id == tag.id); // ukloni tag iz liste
+                Tags.RemoveAll(t => t.id == tag.id);
                 ShiftTagIds();
                 UpdateInputOutputTags();
                 Alarms.RemoveAll(a => a.TagId ==  tag.id);
                 stopFlags.Remove(tag.id);
             }
-            
         }
+
         public static void AddAlarm(Alarm alarm)
         {
             lock (stateLock)
@@ -232,7 +220,6 @@ namespace DataConcentrator
             }
 
         }
-
         public static void SaveConfiguration(string path)
          {
              XElement tags = new XElement("Tag");
@@ -440,11 +427,12 @@ namespace DataConcentrator
 
                 // pročitaj vrednost iz simulatora
                 double value = ReadValueFromSimulator(tag.IOAddress);
-
+                bool changed = false;
                 lock (stateLock)
                 {
                     tag.prevValue = tag.currValue;
                     tag.currValue = value; // snimi i u sam tag
+                    changed = Math.Abs(tag.prevValue - tag.currValue) <= 1e-04 ? true : false;
                     UpdateInputOutputTags();
                     if(tag.type == TagType.AI) { 
                         DateTime captureTime = DateTime.Now;
@@ -452,7 +440,6 @@ namespace DataConcentrator
                         InputTagsValueHistory.Add(captureTime,
                             new Dictionary<string, double>());
                         InputTagsValueHistory[captureTime].Add(tag.IOAddress, tag.currValue);
-                        //Console.WriteLine($"Value : {InputTagsValueHistory[captureTime][tag.IOAddress]}");
 
                     }
                 }

@@ -27,6 +27,7 @@ namespace ScadaGUI
 
             AddressBox.ItemsSource = PLCSimulatorManager.addressValues.Keys;
 
+            /*
             Tag testTag1 = new Tag(0,"Test tag 1", TagType.AI, " ", "ADDR001", -50, 50, "A", new List<Alarm>(), 1000, true);
             Tag testTag2 = new Tag(1, "Test tag 2", TagType.AI, " ", "ADDR002", -10, 10, "V", new List<Alarm>(), 1000, true);
             Tag testTag3 = new Tag(2, "Test tag 3", TagType.DO, " ", "ADDR005", 1);
@@ -38,6 +39,7 @@ namespace ScadaGUI
             ContextClass.AddTag(testTag3);
             ContextClass.AddTag(testTag4);
             ContextClass.AddTag(testTag5);
+            */
 
             ContextClass.ValueChanged += ContextClassValueChangedEventHandler;
             ContextClass.AlarmRaised += ContextClassAlarmRaisedEventHandler;
@@ -153,6 +155,7 @@ namespace ScadaGUI
         }
         private void ContextClassValueChangedEventHandler(object sender, EventArgs e)
         {
+
         }
         private void ContextClassAlarmRaisedEventHandler(object sender, EventArgs e)
         {
@@ -166,8 +169,6 @@ namespace ScadaGUI
                 RefreshAlarmsGrid();
             });
         }
-
-        // Dinamičko prikazivanje polja po tipu taga
         private void TagTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ScanFields.Visibility = Visibility.Collapsed;
@@ -218,7 +219,7 @@ namespace ScadaGUI
                 MessageBox.Show("Memory location is already populted. Remove tag from memory first.");
                 return;
             }
-            int id = ContextClass.Tags.Count > 0 ? ContextClass.Tags.Max(t => t.id) + 1 : 1;
+            int id = ContextClass.Tags.Count;
 
             Tag tag = null;
 
@@ -337,6 +338,7 @@ namespace ScadaGUI
                 RefreshGrid();
                 MessageBox.Show("Uspesno učitano!");
             }
+            
         }
         private void RefreshInputsGrid()
         {
@@ -370,10 +372,6 @@ namespace ScadaGUI
             RefreshTagsGrid();
             RefreshAlarmsGrid();
         }
-
-        /// <summary>
-        /// Event handler za klik na dodavanje alarma
-        /// </summary>
         private void AddAlarmBtnClickEventHandler(object sender, RoutedEventArgs e)
         {
             string selectedTagName = AITagCombo.SelectedItem as string;
@@ -402,11 +400,6 @@ namespace ScadaGUI
 
                 RefreshAlarmsGrid();
             }
-        
-        
-        /// <summary>
-        /// Event handler za klik na remove alarm button
-        /// </summary>
         private void RemoveAlarmBtnClickEventHandler(object sender, RoutedEventArgs e)
         {
             if (AlarmsGrid.SelectedItem is Alarm selectedAlarm)
